@@ -1,3 +1,4 @@
+import sys
 import json
 from .constants import *
 from .logging import Log
@@ -9,8 +10,6 @@ from time import sleep
 from datetime import datetime, date,timedelta
 import logging
 from playwright.async_api import async_playwright
-
-
 
 class YoutubeUpload:
     def __init__(
@@ -76,60 +75,31 @@ class YoutubeUpload:
         Returns if the video was uploaded and the video id.
         """
         self._playwright = await self._start_playwright()
-            #     browser = p.chromium.launch()
-
-        # proxy_option = "socks5://127.0.0.1:1080"
-
         headless=self.headless
-        print(f'running in {"headless" if headless else "normal"} mode.')
-        if self.proxy_option == "":
-            print('start web page without proxy')
 
-            browserLaunchOptionDict = {
-                "headless": headless,
-                # "executable_path": executable_path,
-                "timeout": 300000
+        browserLaunchOptionDict = {
+            "headless": headless,
+            "timeout": 300000,
+        }
+
+        if self.proxy_option:
+            browserLaunchOptionDict['proxy'] = {
+                "server": self.proxy_option,
             }
 
-            if not self.root_profile_directory:
+        if not self.root_profile_directory:
 
-                self.browser = await self._start_browser("firefox", **browserLaunchOptionDict)
-                if self.recordvideo:
-                    self.context = await self.browser.new_context(record_video_dir=os.getcwd()+os.sep+"screen-recording")
-                else:
-                    self.context = await self.browser.new_context()
+            self.browser = await self._start_browser("firefox", **browserLaunchOptionDict)
+            if self.recordvideo:
+                self.context = await self.browser.new_context(record_video_dir=os.getcwd()+os.sep+"screen-recording")
             else:
-                self.context = await self._start_persistent_browser(
-                    "firefox", user_data_dir=self.root_profile_directory, **browserLaunchOptionDict
-                )
-
+                self.context = await self.browser.new_context()
         else:
-            print('start web page with proxy')
+            self.context = await self._start_persistent_browser(
+                "firefox", user_data_dir=self.root_profile_directory, **browserLaunchOptionDict
+            )  
 
-            browserLaunchOptionDict = {
-                "headless": headless,
-                "proxy": {
-                    "server": self.proxy_option,
-                },
-
-                # timeout <float> Maximum time in milliseconds to wait for the browser instance to start. Defaults to 30000 (30 seconds). Pass 0 to disable timeout.#
-                "timeout": 300000
-            }
-
-
-            if not self.root_profile_directory:
-
-                self.browser = await self._start_browser("firefox", **browserLaunchOptionDict)
-                if self.recordvideo:
-                    self.context = await self.browser.new_context(record_video_dir=os.getcwd()+os.sep+"screen-recording")
-                else:
-                    self.context = await self.browser.new_context()
-            else:
-                self.context = await self._start_persistent_browser(
-                    "firefox", user_data_dir=self.root_profile_directory, **browserLaunchOptionDict
-                )
-
-        self.log.debug("Firefox is now running")
+        self.log.debug(f'Firefox is now running in {"Headless" if headless else "Normal"} mode {"with proxy" if self.proxy_option else ""}')
         page = await self.context.new_page()
 
         # 测试代理ip
@@ -137,15 +107,13 @@ class YoutubeUpload:
         # content = await page.content()
         # print('ip:', content)
         # await self.context.close()
-        # return
 
-        print('============tags',tags)
         if not videopath:
             raise FileNotFoundError(f'Could not find file with path: "{videopath}"')
 
 
         if self.CHANNEL_COOKIES and not self.CHANNEL_COOKIES == '':
-            print('cookies existing', self.CHANNEL_COOKIES)
+            self.log.debug(f'Load cookies: {self.CHANNEL_COOKIES}')
 
             await self.context.clear_cookies()
 
@@ -176,10 +144,10 @@ class YoutubeUpload:
             storage = await self.context.storage_state(path=self.CHANNEL_COOKIES)
 
         islogin = confirm_logged_in(page)
-        print('checking login status', islogin)
+        self.log.debug(f'Checking login status: {"PASS" if islogin else "FAILED"}')
 
         if not islogin:
-            print('try to load cookie files')
+            self.log.debug('Try to load cookie files')
             await self.context.clear_cookies()
 
             await self.context.add_cookies(
@@ -191,21 +159,21 @@ class YoutubeUpload:
                 )
             )            
 
-            print('success load cookie files')
+            self.log.debug('Success load cookie files')
             await page.goto(YOUTUBE_URL,timeout=30000)
-            print('start to check login status')
+            self.log.debug('Start to check login status')
 
             islogin = confirm_logged_in(page)
 
             # https://github.com/xtekky/google-login-bypass/blob/main/login.py
 
-        print('start change locale to english')
+        # self.log.debug('Start change locale to EN')
 
-        await set_channel_language_english(page)
-        print('finish change locale to english')
+        # await set_channel_language_english(page)
+        # self.log.debug('Finish change locale to EN')
         await page.goto(YOUTUBE_UPLOAD_URL,timeout=300000)
         # sleep(self.timeout)
-        self.log.debug("Found YouTube upload Dialog Modal")
+        self.log.debug('Found YouTube upload Dialog Modal')
 
         self.log.debug(f'Trying to upload "{videopath}" to YouTube...')
         if os.path.exists(get_path(videopath)):
@@ -214,7 +182,6 @@ class YoutubeUpload:
             await page.set_input_files(INPUT_FILE_VIDEO, get_path(videopath))
         else:
             if os.path.exists(videopath.encode('utf-8')):
-                print('file found', videopath)
                 page.locator(
                     INPUT_FILE_VIDEO)
                 await page.set_input_files(INPUT_FILE_VIDEO, videopath.encode('utf-8'))
@@ -223,14 +190,16 @@ class YoutubeUpload:
     #     <h1 slot="primary-header" id="dialog-title" class="style-scope ytcp-confirmation-dialog">
     #   Verify it's you
     # </h1>
+
+        self.log.debug(f'Trying to detect verify...')
         try:
-            self.log.debug(f'Trying to detect verify...')
-           
             hint=await page.locator('#dialog-title').text_content()
             if "Verify it's you" in hint:
 
     # fix google account verify
-                print('verify its you')
+                print('Found Verify!')
+                sys.exit()
+
                 # await page.click('text=Login')
                 # time.sleep(60)
                 # await page.locator('#confirm-button > div:nth-child(2)').click()
@@ -261,7 +230,6 @@ class YoutubeUpload:
                 # await page.locator('#confirm-button > div:nth-child(2)').click()
                     await page.goto(YOUTUBE_UPLOAD_URL)
         except:
-            print('there is no verification at all')
         #confirm-button > div:nth-child(2)
         # # Catch max uploads/day limit errors
         # if page.get_attribute(NEXT_BUTTON, 'hidden') == 'true':
@@ -283,13 +251,11 @@ class YoutubeUpload:
             # daylimit=await self.page.is_visible(ERROR_SHORT_XPATH)
             self.close()
                 
-            print('catch daily limit,pls try tomorrow')
+            print('Daily limit, pls try tomorrow')
             # if daylimit:
                 # self.close()
         else:
             pass
-
-
 
         self.log.debug(f'Trying to set "{title}" as title...')
 
@@ -303,14 +269,11 @@ class YoutubeUpload:
             title=title[:TITLE_COUNTER-1]
 
                 # TITLE
-        print('click title field to input')
         titlecontainer= page.locator(TEXTBOX)
         await titlecontainer.click()
-        print('clear existing title')
         await page.keyboard.press("Backspace")
         await page.keyboard.press("Control+KeyA")
         await page.keyboard.press("Delete")
-        print('filling new  title')
 
         await page.keyboard.type(title)
 
@@ -389,7 +352,7 @@ class YoutubeUpload:
             pass
         else:
             await wait_for_processing(page,process=False)
-            print('uploading progress check task done')
+            self.log.debug('Uploading progress check task done')
         # if "complete" in page.locator(".progress-label").text_content():
 
         # sometimes you have 4 tabs instead of 3
@@ -397,7 +360,7 @@ class YoutubeUpload:
         for _ in range(3):
             try:
                 await self.click_next(page)
-                print('next next!')
+                self.log.debug('Click Next...')
             except:
                 pass
         if not int(publishpolicy) in [0, 1, 2]:
@@ -449,12 +412,12 @@ class YoutubeUpload:
 
             await setscheduletime(page,publish_date)
             # set_time_cssSelector(page,publish_date)
-        print('publish setting task done')
+        self.log.debug('Publish setting task done')
         video_id=await self.get_video_id(page)
         # option 1 to check final upload status
         if closewhen100percentupload==True:
 
-            print('start to check whether upload is finished')
+            self.log.debug('Check is upload finished')
             while await self.not_uploaded(page):
                 self.log.debug("Still uploading...")
                 sleep(1)
@@ -469,11 +432,6 @@ class YoutubeUpload:
             await done_button.click()
         except:
             print('=======done buttone ')
-        print('upload process is done')
-
-
-   
- 
 
         sleep(5)
         logging.info("Upload is complete")

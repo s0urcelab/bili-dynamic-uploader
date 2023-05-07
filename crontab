@@ -1,2 +1,2 @@
 TZ=Asia/Shanghai
-*/5 * * * * /usr/bin/python /app/demo.py >/proc/1/fd/1 2>/proc/1/fd/2
+*/30 * * * * /usr/bin/python /app/upload.py >/proc/1/fd/1 2>/proc/1/fd/2

@@ -1,1 +1,0 @@
-print('python cron success')
