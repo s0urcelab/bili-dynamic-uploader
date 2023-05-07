@@ -72,13 +72,13 @@ async def task(item):
     try:
         await uploader.upload(
             videopath=video_path,
+            thumbnail=video_cover,
             title=f'【{uname}】{etitle}',
             description='',
-            thumbnail=video_cover,
             # tags=tags,
             closewhen100percentupload=True,
             # 公开1，私有0
-            publishpolicy=0,
+            publishpolicy=1,
             # debug=True,
         )
     except:
