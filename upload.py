@@ -8,6 +8,9 @@ proxy_option = 'socks5://192.168.1.101:7891'
 CHANNEL_COOKIES = '/app/cookies.json'
 video_path = '/media/白丝妹妹，叮叮当当～.mp4'
 video_thumbnail = '/media/extra/白丝妹妹，叮叮当当～.jpg'
+# CHANNEL_COOKIES = './cookies.json'
+# video_path = '\\\\HTPC\Dance\白丝妹妹，叮叮当当～.mp4'
+# video_thumbnail = '\\\\HTPC\Dance\extra\白丝妹妹，叮叮当当～.jpg'
 
 
 # for cookie issue,
@@ -25,7 +28,7 @@ uploader = YoutubeUpload(
 )
 
 if __name__ == '__main__':
-    print('定时任务：开始测试上传')
+    print('开始测试上传')
     asyncio.run(uploader.upload(
         videopath=video_path,
         title=title,

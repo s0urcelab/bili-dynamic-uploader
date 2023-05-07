@@ -15,7 +15,7 @@ from playwright.async_api import async_playwright
 class YoutubeUpload:
     def __init__(
         self,
-        root_profile_directory: str,
+        root_profile_directory: str = "",
         proxy_option: str = "",
         timeout: int = 3,
         headless: bool = True,
@@ -131,11 +131,13 @@ class YoutubeUpload:
 
         self.log.debug("Firefox is now running")
         page = await self.context.new_page()
-        await page.goto('http://myip.ipip.net/')
-        content = await page.content()
-        print('ip:', content)
-        await self.context.close()
-        return
+
+        # 测试代理ip
+        # await page.goto('http://myip.ipip.net/')
+        # content = await page.content()
+        # print('ip:', content)
+        # await self.context.close()
+        # return
 
         print('============tags',tags)
         if not videopath:
