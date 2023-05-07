@@ -12,8 +12,6 @@ video_thumbnail = '/media/extra/白丝妹妹，叮叮当当～.jpg'
 
 # for cookie issue,
 title = '【你的灰鸽鸽】叮叮当当'
-username = '风控验证的账号'
-password = '风控验证的密码'
 description = ''
 uploader = YoutubeUpload(
     # use r"" for paths, this will not give formatting errors e.g. "\n"
@@ -22,8 +20,6 @@ uploader = YoutubeUpload(
     headless=True,
     # if you want to silent background running, set headless true
     CHANNEL_COOKIES=CHANNEL_COOKIES,
-    username=username,
-    password=password,
     recordvideo=False
     # for test purpose we need to check the video step by step ,
 )

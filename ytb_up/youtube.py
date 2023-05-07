@@ -20,12 +20,10 @@ class YoutubeUpload:
         timeout: int = 3,
         headless: bool = True,
         debug: bool = True,
-        username:str ="",
-        password:str ="",
+        username: str = "",
+        password: str = "",
         CHANNEL_COOKIES: str = "",
-        ytb_cookies:str="",
-        tiktok_cookies:str="",
-        recordvideo:bool=False
+        recordvideo: bool = False
 
     ) -> None:
         self.timeout = timeout
@@ -36,8 +34,6 @@ class YoutubeUpload:
         self.root_profile_directory=root_profile_directory
         self.proxy_option=proxy_option
         self.headless=headless
-        self.ytb_cookies=ytb_cookies
-        self.tiktok_cookies=tiktok_cookies
         self._playwright=''
         self.browser=None
         self.context=''
@@ -85,7 +81,7 @@ class YoutubeUpload:
         # proxy_option = "socks5://127.0.0.1:1080"
 
         headless=self.headless
-        print(f'running in {'headless' if headless else 'normal'} mode.')
+        print(f'running in {"headless" if headless else "normal"} mode.')
         if self.proxy_option == "":
             print('start web page without proxy')
 
