@@ -1,0 +1,11 @@
+/__pycache__/*
+/scikit-image/*
+ytb.db
+main.spec
+/ytb_up.egg-info/*
+/build/*
+/dist/*
+/test-results/*
+screen-recording/*
+/ytb_up/__pycache__/*
+cookies.json
