@@ -9,3 +9,5 @@ main.spec
 screen-recording/*
 /ytb_up/__pycache__/*
 cookies.json
+db.json
+.env

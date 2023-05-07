@@ -18,7 +18,7 @@ class YoutubeUpload:
         proxy_option: str = "",
         timeout: int = 3,
         headless: bool = True,
-        debug: bool = True,
+        debug: bool = False,
         username: str = "",
         password: str = "",
         CHANNEL_COOKIES: str = "",
@@ -66,16 +66,15 @@ class YoutubeUpload:
         # mode c:release_offset not exist, publishdate not exist,daily count to increment schedule from tomorrow
         # mode d: offset exist, publish date not exist, daily count to increment with specific offset schedule from tomorrow
         release_offset: str = '0-1',
-        publish_date: datetime = datetime(
-            date.today().year,  date.today().month,  date.today().day, 10, 15),
+        publish_date: datetime = datetime(date.today().year,  date.today().month,  date.today().day, 10, 15),
         tags: list = [],
-        closewhen100percentupload:bool =True
+        closewhen100percentupload: bool = True
     ) -> Tuple[bool, Optional[str]]:
         """Uploads a video to YouTube.
         Returns if the video was uploaded and the video id.
         """
         self._playwright = await self._start_playwright()
-        headless=self.headless
+        headless = self.headless
 
         browserLaunchOptionDict = {
             "headless": headless,
@@ -171,7 +170,7 @@ class YoutubeUpload:
 
         # await set_channel_language_english(page)
         # self.log.debug('Finish change locale to EN')
-        await page.goto(YOUTUBE_UPLOAD_URL,timeout=300000)
+        await page.goto(YOUTUBE_UPLOAD_URL, timeout=300000)
         # sleep(self.timeout)
         self.log.debug('Found YouTube upload Dialog Modal')
 
@@ -193,10 +192,9 @@ class YoutubeUpload:
 
         self.log.debug(f'Trying to detect verify...')
         try:
-            hint=await page.locator('#dialog-title').text_content()
+            hint = await page.locator('#dialog-title').text_content()
             if "Verify it's you" in hint:
-
-    # fix google account verify
+                # fix google account verify
                 print('Found Verify!')
                 sys.exit()
 
@@ -220,16 +218,17 @@ class YoutubeUpload:
                 await page.locator('.VfPpkd-LgbsSe-OWXEXe-k8QpJ > span:nth-child(4)').click()
                 # await page.click('text=Submit')
 
-                Stephint=await page.locator('.bCAAsb > form:nth-child(1) > span:nth-child(1) > section:nth-child(1) > header:nth-child(1) > div:nth-child(1)').text_content()
+                Stephint = await page.locator('.bCAAsb > form:nth-child(1) > span:nth-child(1) > section:nth-child(1) > header:nth-child(1) > div:nth-child(1)').text_content()
                 print(Stephint)
-                if "2-Step Verification" in Stephint:            
-    # <div class="L9iFZc" role="presentation" jsname="NjaE2c"><h2 class="kV95Wc TrZEUc"><span jsslot="" jsname="Ud7fr">2-Step Verification</span></h2><div class="yMb59d" jsname="HSrbLb" aria-hidden="true"></div></div>            
+                if "2-Step Verification" in Stephint:
+                # <div class="L9iFZc" role="presentation" jsname="NjaE2c"><h2 class="kV95Wc TrZEUc"><span jsslot="" jsname="Ud7fr">2-Step Verification</span></h2><div class="yMb59d" jsname="HSrbLb" aria-hidden="true"></div></div>            
                 # <span jsslot="" jsname="Ud7fr">2-Step Verification</span>
-                    print('you need google auth and sms very code')
+                    print('You need google auth and sms very code')
                     time.sleep(60)
-                # await page.locator('#confirm-button > div:nth-child(2)').click()
+                    # await page.locator('#confirm-button > div:nth-child(2)').click()
                     await page.goto(YOUTUBE_UPLOAD_URL)
         except:
+            self.log.debug(f"No need verification")
         #confirm-button > div:nth-child(2)
         # # Catch max uploads/day limit errors
         # if page.get_attribute(NEXT_BUTTON, 'hidden') == 'true':
@@ -268,8 +267,8 @@ class YoutubeUpload:
             print(f"Title was not set due to exceeding the maximum allowed characters ({len(title)}/{TITLE_COUNTER})")
             title=title[:TITLE_COUNTER-1]
 
-                # TITLE
-        titlecontainer= page.locator(TEXTBOX)
+        # TITLE
+        titlecontainer = page.locator(TEXTBOX)
         await titlecontainer.click()
         await page.keyboard.press("Backspace")
         await page.keyboard.press("Control+KeyA")
@@ -284,7 +283,7 @@ class YoutubeUpload:
                 print(
                     f"Description was not set due to exceeding the maximum allowed characters ({len(description)}/{DESCRIPTION_COUNTER})"
                 )
-                description=description[:4888]
+                description = description[:4888]
 
             self.log.debug(f'Trying to set "{description}" as description...')
             print('click description field to input')
@@ -298,16 +297,14 @@ class YoutubeUpload:
             await page.keyboard.type(description)
 
 
-        if thumbnail:
+        if thumbnail and page.locator(INPUT_FILE_THUMBNAIL).count():
             self.log.debug(f'Trying to set "{thumbnail}" as thumbnail...')
             if os.path.exists(get_path(thumbnail)):
-                await page.locator(
-                    INPUT_FILE_THUMBNAIL).set_input_files(get_path(thumbnail))
+                await page.locator(INPUT_FILE_THUMBNAIL).set_input_files(get_path(thumbnail))
             else:
                 if os.path.exists(thumbnail.encode('utf-8')):
-                    print('thumbnail found', thumbnail)
-                    await page.locator(INPUT_FILE_THUMBNAIL).set_input_files(
-                        thumbnail.encode('utf-8'))
+                    # print('thumbnail found', thumbnail)
+                    await page.locator(INPUT_FILE_THUMBNAIL).set_input_files(thumbnail.encode('utf-8'))
             sleep(self.timeout)
         # try:
         #     self.log.debug('Trying to set video to "Not made for kids"...')
@@ -341,7 +338,7 @@ class YoutubeUpload:
             await page.keyboard.press("Backspace")
             await page.keyboard.press("Control+KeyA")
             await page.keyboard.press("Delete")
-            print('filling new  tags')
+            print('filling new tags')
             await page.keyboard.type(tags)
 
 # Language and captions certification
@@ -419,7 +416,7 @@ class YoutubeUpload:
 
             self.log.debug('Check is upload finished')
             while await self.not_uploaded(page):
-                self.log.debug("Still uploading...")
+                self.log.debug('Still uploading...')
                 sleep(1)
         try:
             done_button=page.locator(DONE_BUTTON)
@@ -431,7 +428,7 @@ class YoutubeUpload:
 
             await done_button.click()
         except:
-            print('=======done buttone ')
+            print('=======done buttone')
 
         sleep(5)
         logging.info("Upload is complete")
@@ -478,9 +475,7 @@ class YoutubeUpload:
         if browsertype == "webkit":
             return await self._playwright.webkit.launch(**kwargs)
 
-        raise RuntimeError(
-            "You have to select either 'chromium', 'firefox', or 'webkit' as browser."
-        )
+        raise RuntimeError("You have to select either 'chromium', 'firefox', or 'webkit' as browser.")
 
     async def _start_persistent_browser(
         self, browser: str, user_data_dir: Optional[Union[str, Path]], **kwargs
@@ -503,9 +498,7 @@ class YoutubeUpload:
                 user_data_dir, **kwargs
             )
 
-        raise RuntimeError(
-            "You have to select either 'chromium', 'firefox' or 'webkit' as browser."
-        )
+        raise RuntimeError("You have to select either 'chromium', 'firefox' or 'webkit' as browser.")
     async def close(self):
         await self.browser.close()
         await self._playwright.stop()

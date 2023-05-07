@@ -1,3 +1,5 @@
+import html
+import re
 import asyncio
 import logging
 import glob
@@ -9,24 +11,24 @@ from ytb_up.youtube import *
 # 加载.env的环境变量
 load_dotenv()
 # 配置logger
-logger = logging.getLogger()
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+ch.setFormatter(formatter)
+logger = logging.getLogger('bdm-cron-upload')
+logger.setLevel(logging.INFO)
+logger.addHandler(ch)
 
 DB_PATH = os.environ['DB_PATH']
+YTB_COOKIE_PATH = os.environ['YTB_COOKIE_PATH']
 CONCURRENT_TASK_NUM = int(os.environ['CONCURRENT_TASK_NUM'])
 
 db = TinyDB(DB_PATH)
-config = db.table('config')
 dynamic_list = db.table('dynamic_list', cache_size=0)
+shazam_list = db.table('shazam_list', cache_size=0)
 
 # if you use some kinda of proxy to access youtube, 
 proxy_option = 'socks5://192.168.1.101:7891'
-
-CHANNEL_COOKIES = '/app/cookies.json'
-video_path = '/media/白丝妹妹，叮叮当当～.mp4'
-video_thumbnail = '/media/extra/白丝妹妹，叮叮当当～.jpg'
-# CHANNEL_COOKIES = './cookies.json'
-# video_path = '\\\\HTPC\Dance\白丝妹妹，叮叮当当～.mp4'
-# video_thumbnail = '\\\\HTPC\Dance\extra\白丝妹妹，叮叮当当～.jpg'
 
 uploader = YoutubeUpload(
     # use r"" for paths, this will not give formatting errors e.g. "\n"
@@ -34,7 +36,7 @@ uploader = YoutubeUpload(
     proxy_option=proxy_option,
     headless=True,
     # if you want to silent background running, set headless true
-    CHANNEL_COOKIES=CHANNEL_COOKIES,
+    CHANNEL_COOKIES=YTB_COOKIE_PATH,
     recordvideo=False
     # for test purpose we need to check the video step by step ,
 )
@@ -57,46 +59,54 @@ async def task(item):
     uname = item['uname']
     etitle = item['etitle'] or title
 
-    if not MP4_FILE_PATH(title):
-        raise Exception('未找到视频')
-    if not ATTACHMENT_FILE_PATH(title):
-        raise Exception('未找到封面')
+    if len(MP4_FILE_PATH(title)) == 0:
+        return logger.error(f'未找到视频 {title}')
+    if len(ATTACHMENT_FILE_PATH(title)) == 0:
+        return logger.error(f'未找到封面 {title}')
 
     video_path = MP4_FILE_PATH(title)[0]
     video_cover = ATTACHMENT_FILE_PATH(title)[0]
 
     dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
 
-    await uploader.upload(
-        videopath=video_path,
-        title=f'【{uname}】{etitle}',
-        description='',
-        thumbnail=video_cover,
-        # tags=tags,
-        closewhen100percentupload=True,
-        # 公开1，私有0
-        publishpolicy=1
-    )
+    try:
+        await uploader.upload(
+            videopath=video_path,
+            title=f'【{uname}】{etitle}',
+            description='',
+            thumbnail=video_cover,
+            # tags=tags,
+            closewhen100percentupload=True,
+            # 公开1，私有0
+            publishpolicy=0,
+            # debug=True,
+        )
+    except:
+        dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
+        logger.error(f'上传失败 {title}')
+    else:
+        # 上传成功
+        dynamic_list.update({'ustatus': 200}, where('bvid') == bvid)
+        logger.info(f'上传成功 {title}')
+
 
 async def async_task():
     sort_by_date = lambda li: sorted(li, key=lambda i: i['pdate'], reverse=False)
     # 等待上传
     q1 = where('ustatus') == 100
-    wait_list = sort_by_date(dynamic_list.search(q1))[:CONCURRENT_TASK_NUM]
-
-    coros = [task(i) for i in wait_list]
-    ret_list = await asyncio.gather(*coros, return_exceptions=True)
-    for idx, item in enumerate(ret_list):
-        item_bvid = li[idx]['bvid']
-        item_title = li[idx]['title']
-        if isinstance(item, Exception):
-            dynamic_list.update({'ustatus': -1}, where('bvid') == item_bvid)
-            logger.error(f'上传失败 {item_title}')
+    li = sort_by_date(dynamic_list.search(q1))[:CONCURRENT_TASK_NUM]
+    def add_shazam(item):
+        q = where('id') == item['shazam_id']
+        target = shazam_list.get(q)
+        if target != None:
+            return {**item, 'etitle': target['title']}
         else:
-            # 上传成功
-            dynamic_list.update({'ustatus': 200}, where('bvid') == item_bvid)
-            logger.info(f'上传成功 {item_title}')
-    
+            return item
+
+    li = list(map(add_shazam, li))
+
+    for item in li:
+        await task(item)
 
 if __name__ == '__main__':
     logger.info('定时任务：开始准备上传')

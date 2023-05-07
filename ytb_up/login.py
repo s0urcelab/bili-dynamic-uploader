@@ -32,31 +32,10 @@ async def format_cookie_file(cookie_file: str):
     print('add cookies',domain_cookies[cookie["domain"]])
     # await self.context.add_cookies(cookies)
     return domain_cookies[cookie["domain"]]
+    
 def confirm_logged_in(page) -> bool:
     """ Confirm that the user is logged in. The browser needs to be navigated to a YouTube page. """
-    try:
-        print(page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer > img:nth-child(1)"))
-        page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer > img:nth-child(1)")
-
-        # WebDriverWait(page, 10).until(EC.element_to_be_clickable("avatar-btn")))
-        return True
-    except TimeoutError:
+    if not page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer").count():
         return False
-def confirm_logged_in_douyin(page) -> bool:
-    try:
-
-        page.locator('.avatar--1lU_a')
+    else:
         return True
-    except:
-        return False
-
-def confirm_logged_in(page) -> bool:
-    """ Confirm that the user is logged in. The browser needs to be navigated to a YouTube page. """
-    try:
-        print(page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer > img:nth-child(1)"))
-        page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer > img:nth-child(1)")
-
-        # WebDriverWait(page, 10).until(EC.element_to_be_clickable("avatar-btn")))
-        return True
-    except TimeoutError:
-        return False
