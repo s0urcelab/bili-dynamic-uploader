@@ -57,6 +57,7 @@ async def task(item):
     bvid = item['bvid']
     title = item['title']
     uname = item['uname']
+    is_portrait = item['is_portrait']
     etitle = item['etitle'] or title
 
     if len(MP4_FILE_PATH(title)) == 0:
@@ -73,7 +74,7 @@ async def task(item):
         await uploader.upload(
             videopath=video_path,
             thumbnail=video_cover,
-            title=f'【{uname}】{etitle}',
+            title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}',
             description='',
             # tags=tags,
             closewhen100percentupload=True,
