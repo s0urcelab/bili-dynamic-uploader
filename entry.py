@@ -98,7 +98,7 @@ async def main():
         await task(item)
 
 if __name__ == '__main__':
-    scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
     scheduler.add_job(main, 'interval', minutes=30, next_run_time=datetime.now())
     scheduler.start()
     
