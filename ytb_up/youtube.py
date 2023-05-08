@@ -140,7 +140,7 @@ class YoutubeUpload:
             sleep(USER_WAITING_TIME)
             storage = await self.context.storage_state(path=self.channel_cookies)
 
-        islogin = confirm_logged_in(page)
+        islogin = await confirm_logged_in(page)
         self.log.debug(f'Checking login status: {"PASS" if islogin else "FAILED"}')
 
         if not islogin:
@@ -160,7 +160,7 @@ class YoutubeUpload:
             await page.goto(YOUTUBE_URL,timeout=30000)
             self.log.debug('Start to check login status')
 
-            islogin = confirm_logged_in(page)
+            islogin = await confirm_logged_in(page)
 
             # https://github.com/xtekky/google-login-bypass/blob/main/login.py
 
@@ -294,8 +294,8 @@ class YoutubeUpload:
 
             await page.keyboard.type(description)
 
-        need_thum = await page.locator(INPUT_FILE_THUMBNAIL).count()
-        if thumbnail and need_thum:
+        need_set_thum = await page.locator(INPUT_FILE_THUMBNAIL).count()
+        if thumbnail and need_set_thum:
             self.log.debug(f'Trying to set "{thumbnail}" as thumbnail...')
             if os.path.exists(get_path(thumbnail)):
                 await page.locator(INPUT_FILE_THUMBNAIL).set_input_files(get_path(thumbnail))

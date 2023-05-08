@@ -33,7 +33,7 @@ async def format_cookie_file(cookie_file: str):
     # await self.context.add_cookies(cookies)
     return domain_cookies[cookie["domain"]]
     
-def confirm_logged_in(page) -> bool:
+async def confirm_logged_in(page) -> bool:
     """ Confirm that the user is logged in. The browser needs to be navigated to a YouTube page. """
     has_avatar = await page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer").count()
     return bool(has_avatar)
