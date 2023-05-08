@@ -193,17 +193,17 @@ class YoutubeUpload:
         self.log.debug(f'Trying to detect verify...')
         try:
             hint = await page.locator('#dialog-title').text_content()
-            if "Verify it's you" in hint:
+            if "验证是您本人在操作" in hint:
                 # fix google account verify
-                print('Found Verify!')
-                sys.exit()
+                print('触发风控!')
+                # sys.exit()
 
                 # await page.click('text=Login')
                 # time.sleep(60)
                 # await page.locator('#confirm-button > div:nth-child(2)').click()
                 await page.goto('https://accounts.google.com/signin/v2/identifier?service=youtube&uilel=3&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26next%3Dhttps%253A%252F%252Fstudio.youtube.com%252Freauth%26feature%3Dreauth%26authuser%3D3%26pageid%3D106691143538188646876%26skip_identity_prompt%3Dtrue&hl=en&authuser=3&rart=ANgoxcd6AUvx_ynaUmq5M6nROFwTagKglTZqT8c97xb1AEzoDasGeJ14cNlvYfH1_mJsl7us_sFLNGJskNrJyjMaIE2KklrO7Q&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
-                page.locator('#identifierId')
-                print('input username or email')
+                # page.locator('#identifierId')
+                # print('input username or email')
 
                 # <div class="rFrNMe N3Hzgf jjwyfe QBQrY zKHdkd sdJrJc Tyc9J" jscontroller="pxq3x" jsaction="clickonly:KjsqPd; focus:Jt1EX; blur:fpfTEe; input:Lg5SV" jsshadow="" jsname="Vsb5Ub"><div class="aCsJod oJeWuf"><div class="aXBtI Wic03c"><div class="Xb9hP"><input type="email" class="whsOnd zHQkBf" jsname="YPqjbf" autocomplete="username" spellcheck="false" tabindex="0" aria-label="Email or phone" name="identifier" autocapitalize="none" id="identifierId" dir="ltr" data-initial-dir="ltr" data-initial-value=""><div jsname="YRMmle" class="AxOyFc snByac" aria-hidden="true">Email or phone</div></div><div class="i9lrp mIZh1c"></div><div jsname="XmnwAc" class="OabDMe cXrdqd Y2Zypf"></div></div></div><div class="LXRPh"><div jsname="ty6ygf" class="ovnfwe Is7Fhb"></div><div jsname="B34EJ" class="dEOOab RxsGPe" aria-atomic="true" aria-live="assertive"></div></div></div>
 
@@ -218,15 +218,15 @@ class YoutubeUpload:
                 await page.locator('.VfPpkd-LgbsSe-OWXEXe-k8QpJ > span:nth-child(4)').click()
                 # await page.click('text=Submit')
 
-                Stephint = await page.locator('.bCAAsb > form:nth-child(1) > span:nth-child(1) > section:nth-child(1) > header:nth-child(1) > div:nth-child(1)').text_content()
-                print(Stephint)
-                if "2-Step Verification" in Stephint:
-                # <div class="L9iFZc" role="presentation" jsname="NjaE2c"><h2 class="kV95Wc TrZEUc"><span jsslot="" jsname="Ud7fr">2-Step Verification</span></h2><div class="yMb59d" jsname="HSrbLb" aria-hidden="true"></div></div>            
-                # <span jsslot="" jsname="Ud7fr">2-Step Verification</span>
-                    print('You need google auth and sms very code')
-                    time.sleep(60)
-                    # await page.locator('#confirm-button > div:nth-child(2)').click()
-                    await page.goto(YOUTUBE_UPLOAD_URL)
+                # Stephint = await page.locator('.bCAAsb > form:nth-child(1) > span:nth-child(1) > section:nth-child(1) > header:nth-child(1) > div:nth-child(1)').text_content()
+                # print(Stephint)
+                # if "2-Step Verification" in Stephint:
+                # # <div class="L9iFZc" role="presentation" jsname="NjaE2c"><h2 class="kV95Wc TrZEUc"><span jsslot="" jsname="Ud7fr">2-Step Verification</span></h2><div class="yMb59d" jsname="HSrbLb" aria-hidden="true"></div></div>            
+                # # <span jsslot="" jsname="Ud7fr">2-Step Verification</span>
+                #     print('You need google auth and sms very code')
+                #     time.sleep(60)
+                #     # await page.locator('#confirm-button > div:nth-child(2)').click()
+                #     await page.goto(YOUTUBE_UPLOAD_URL)
         except:
             self.log.debug(f"No need verification")
         #confirm-button > div:nth-child(2)

@@ -22,6 +22,9 @@ logger.addHandler(ch)
 DB_PATH = os.environ['DB_PATH']
 YTB_COOKIE_PATH = os.environ['YTB_COOKIE_PATH']
 CONCURRENT_TASK_NUM = int(os.environ['CONCURRENT_TASK_NUM'])
+YTB_DEBUG = os.environ['YTB_DEBUG'] == 'True'
+YTB_UN = os.environ['YTB_UN']
+YTB_PW = os.environ['YTB_PW']
 
 db = TinyDB(DB_PATH)
 dynamic_list = db.table('dynamic_list', cache_size=0)
@@ -37,7 +40,10 @@ uploader = YoutubeUpload(
     headless=True,
     # if you want to silent background running, set headless true
     CHANNEL_COOKIES=YTB_COOKIE_PATH,
-    recordvideo=False
+    recordvideo=False,
+    debug=YTB_DEBUG,
+    username=YTB_UN,
+    password=YTB_PW,
     # for test purpose we need to check the video step by step ,
 )
 
@@ -58,12 +64,13 @@ async def task(item):
     title = item['title']
     uname = item['uname']
     is_portrait = item['is_portrait']
+    is_8k = '8K' in item['max_quality']
     etitle = item['etitle'] or title
 
     if len(MP4_FILE_PATH(title)) == 0:
-        return logger.error(f'未找到视频 {title}')
+        return logger.error(f'未找到视频：{title}')
     if len(ATTACHMENT_FILE_PATH(title)) == 0:
-        return logger.error(f'未找到封面 {title}')
+        return logger.error(f'未找到封面：{title}')
 
     video_path = MP4_FILE_PATH(title)[0]
     video_cover = ATTACHMENT_FILE_PATH(title)[0]
@@ -74,21 +81,31 @@ async def task(item):
         await uploader.upload(
             videopath=video_path,
             thumbnail=video_cover,
-            title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}',
+            title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
             description='',
             # tags=tags,
             closewhen100percentupload=True,
             # 公开1，私有0
             publishpolicy=1,
-            # debug=True,
         )
     except:
         dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
-        logger.error(f'上传失败 {title}')
+        logger.error(f'上传失败：{title}')
     else:
         # 上传成功
         dynamic_list.update({'ustatus': 200}, where('bvid') == bvid)
-        logger.info(f'上传成功 {title}')
+        logger.info(f'上传成功：{title}')
+
+    # await uploader.upload(
+    #     videopath=video_path,
+    #     thumbnail=video_cover,
+    #     title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
+    #     description='',
+    #     # tags=tags,
+    #     closewhen100percentupload=True,
+    #     # 公开1，私有0
+    #     publishpolicy=0,
+    # )
 
 
 async def async_task():
