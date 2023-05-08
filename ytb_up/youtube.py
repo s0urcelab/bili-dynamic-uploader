@@ -1,14 +1,13 @@
+import os
 import sys
 import json
-from .constants import *
-from .logging import Log
-from .exceptions import *
-from .utils import *
-import os
-from .login import *
+import logging
 from time import sleep
 from datetime import datetime, date,timedelta
-import logging
+from .constants import *
+from .exceptions import *
+from .utils import *
+from .login import *
 from playwright.async_api import async_playwright
 
 class YoutubeUpload:
@@ -18,18 +17,17 @@ class YoutubeUpload:
         proxy_option: str = "",
         timeout: int = 3,
         headless: bool = True,
-        debug: bool = False,
         username: str = "",
         password: str = "",
-        CHANNEL_COOKIES: str = "",
-        recordvideo: bool = False
-
+        channel_cookies: str = "",
+        record_video: bool = False,
+        logger: logging.Logger = None,
     ) -> None:
         self.timeout = timeout
-        self.log = Log(debug)
+        self.log = logger
         self.username=username
         self.password=password
-        self.CHANNEL_COOKIES = CHANNEL_COOKIES    
+        self.channel_cookies = channel_cookies    
         self.root_profile_directory=root_profile_directory
         self.proxy_option=proxy_option
         self.headless=headless
@@ -37,7 +35,7 @@ class YoutubeUpload:
         self.browser=None
         self.context=''
         self.page=''
-        self.recordvideo=recordvideo
+        self.record_video=record_video
         # self.setup()
 
     def send(self, element, text: str) -> None:
@@ -89,7 +87,7 @@ class YoutubeUpload:
         if not self.root_profile_directory:
 
             self.browser = await self._start_browser("firefox", **browserLaunchOptionDict)
-            if self.recordvideo:
+            if self.record_video:
                 self.context = await self.browser.new_context(record_video_dir=os.getcwd()+os.sep+"screen-recording")
             else:
                 self.context = await self.browser.new_context()
@@ -111,20 +109,20 @@ class YoutubeUpload:
             raise FileNotFoundError(f'Could not find file with path: "{videopath}"')
 
 
-        if self.CHANNEL_COOKIES and not self.CHANNEL_COOKIES == '':
-            self.log.debug(f'Load cookies: {self.CHANNEL_COOKIES}')
+        if self.channel_cookies and not self.channel_cookies == '':
+            self.log.debug(f'Load cookies: {self.channel_cookies}')
 
             await self.context.clear_cookies()
 
             await self.context.add_cookies(
                 json.load(
                     open(
-                        self.CHANNEL_COOKIES, 
+                        self.channel_cookies, 
                         'r'
                     )
                 )
             )            
-            # login_using_cookie_file(self,self.CHANNEL_COOKIES,page)         
+            # login_using_cookie_file(self,self.channel_cookies,page)         
             await page.goto(YOUTUBE_URL,timeout=300000)
 
             await page.reload()
@@ -140,7 +138,7 @@ class YoutubeUpload:
             # page.fill('input[name="password"]', PASSWORD)
             # page.click('text=Submit')
             sleep(USER_WAITING_TIME)
-            storage = await self.context.storage_state(path=self.CHANNEL_COOKIES)
+            storage = await self.context.storage_state(path=self.channel_cookies)
 
         islogin = confirm_logged_in(page)
         self.log.debug(f'Checking login status: {"PASS" if islogin else "FAILED"}')
@@ -152,7 +150,7 @@ class YoutubeUpload:
             await self.context.add_cookies(
                 json.load(
                     open(
-                        self.CHANNEL_COOKIES, 
+                        self.channel_cookies, 
                         'r'
                     )
                 )
@@ -296,8 +294,8 @@ class YoutubeUpload:
 
             await page.keyboard.type(description)
 
-
-        if thumbnail and page.locator(INPUT_FILE_THUMBNAIL).count():
+        need_thum = await page.locator(INPUT_FILE_THUMBNAIL).count()
+        if thumbnail and need_thum:
             self.log.debug(f'Trying to set "{thumbnail}" as thumbnail...')
             if os.path.exists(get_path(thumbnail)):
                 await page.locator(INPUT_FILE_THUMBNAIL).set_input_files(get_path(thumbnail))
@@ -431,7 +429,7 @@ class YoutubeUpload:
             print('=======done buttone')
 
         sleep(5)
-        logging.info("Upload is complete")
+        self.log.debug("Upload is complete")
         await self.close()
         # page.locator("#close-icon-button > tp-yt-iron-icon:nth-child(1)").click()
         # print(page.expect_popup().locator("#html-body > ytcp-uploads-still-processing-dialog:nth-child(39)"))
@@ -465,7 +463,7 @@ class YoutubeUpload:
 
         if browsertype == "firefox":
             return await self._playwright.firefox.launch(**kwargs)
-            # if self.recordvideo:
+            # if self.record_video:
             #     return await self._playwright.firefox.launch(record_video_dir=os.path.abspath('')+os.sep+"screen-recording", **kwargs)
             # else:
             #     return await self._playwright.firefox.launch( **kwargs)
@@ -488,7 +486,7 @@ class YoutubeUpload:
         if browser == "firefox":
             self.browser=await self._playwright.firefox.launch(**kwargs)
 
-            if self.recordvideo:
+            if self.record_video:
                 return await self._playwright.firefox.launch_persistent_context(user_data_dir,record_video_dir=os.path.abspath('')+os.sep+"screen-recording", **kwargs)
             else:
                 return await self._playwright.firefox.launch_persistent_context(user_data_dir, **kwargs)

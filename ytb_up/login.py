@@ -35,7 +35,5 @@ async def format_cookie_file(cookie_file: str):
     
 def confirm_logged_in(page) -> bool:
     """ Confirm that the user is logged in. The browser needs to be navigated to a YouTube page. """
-    if not page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer").count():
-        return False
-    else:
-        return True
+    has_avatar = await page.locator("yt-img-shadow.ytd-topbar-menu-button-renderer").count()
+    return bool(has_avatar)

@@ -19,6 +19,7 @@ def get_path(file_path: str) -> str:
 def close_browser(self):
     self.browser.close()
     self._playwright.stop()
+
 async def set_channel_language_english(page):
     # why does not work again
     try:
@@ -103,32 +104,7 @@ async def wait_for_processing(page, process):
                 break
             elif 'complete' in upload_progress.lower():
                 break
-async def setscheduletime_douyin(page, publish_date: datetime):
-    hour_to_post, date_to_post, publish_date_hour=hour_and_date_douyin(
-        publish_date)
 
-    # Clicking in schedule video
-    print('click schedule')
-    await page.locator('label.one-line--2rHu9:nth-child(2)').click()
-
-    sleep(1)
-    # Writing date
-    date_to_post=publish_date.strftime("%Y-%m-%d")
-    hour_xpath=get_hour_xpath(hour_to_post)    
-    print('click date',str(publish_date_hour),type(publish_date_hour))
-    # 2022-05-15 09:24
-    # await page.locator('.semi-input').click()
-
-    sleep(1)
-    
-    await page.keyboard.press("Control+KeyA")
-    await page.keyboard.type(str(publish_date_hour))
-    await page.keyboard.press("Enter")
-
-    sleep(1)
-
-
-    sleep(1)
 async def setscheduletime(page, publish_date: datetime):
     hour_to_post, date_to_post, publish_date_hour=hour_and_date(
         publish_date)
@@ -172,22 +148,6 @@ async def setscheduletime(page, publish_date: datetime):
 
     sleep(1)
 
-
-
-def hour_and_date_douyin( now_date_hour):
-    # now_date_hour += datetime.timedelta(seconds=TIME_BETWEEN_POSTS)
-    hour_to_post=now_date_hour.strftime('%H:%M')
-    hour, minutes=hour_to_post.split(
-        ':')[0], int(hour_to_post.split(':')[1])
-    setting_minutes=minutes//15
-    minutes=setting_minutes * 15
-    if minutes == 0:
-        minutes='00'
-    hour_to_post=f'{hour}:{minutes}'
-        # 2022-05-15 09:24
-    print('now_date_hour',now_date_hour)
-    date_to_post=now_date_hour.strftime('%d/%m/%Y')
-    return hour_to_post, date_to_post, now_date_hour
 
 def hour_and_date( now_date_hour):
     # now_date_hour += datetime.timedelta(seconds=TIME_BETWEEN_POSTS)
@@ -504,49 +464,4 @@ def waitfordone(page):
     while ': ' in uploading_progress_text:
         sleep(5)
         page.locator( UPLOADING_PROGRESS_SELECTOR).text_content()
-
-def uploadTikTok(username, tiktok, deletionStatus, file):
-    regex = re.compile('[0-9]{17}')
-    regexA = re.compile('[0-9]{18}')
-    regexB = re.compile('[0-9]{19}')
-    regexC = re.compile('[0-9]{8}')
-    regexD = re.compile('[0-9]{9}')
-    if os.path.isdir(tiktok):
-        if (
-            regex.match(str(tiktok))
-            or (regexA.match(str(tiktok)))
-            or (regexB.match(str(tiktok)))
-            or (regexC.match(str(tiktok)))
-            or (regexD.match(str(tiktok)))
-        ):  # TODO: use or regex with "|" instead of this
-            item = get_item('tiktok-' + tiktok)
-            if username is None:
-                if file is not None:
-                    file.write(str(tiktok))
-                    file.write('\n')
-                return None
-            item.upload(
-                './' + tiktok + '/',
-                verbose=True,
-                checksum=True,
-                delete=deletionStatus,
-                metadata=dict(
-                    collection='opensource_media',
-                    subject='tiktok',
-                    creator=username,
-                    title='TikTok Video by ' + username,
-                    originalurl='https://www.tiktok.com/@' + username + '/video/' + tiktok,
-                    scanner='TikUp ' + getVersion(),
-                ),
-                retries=9001,
-                retries_sleep=60,
-            )
-            if deletionStatus:
-                os.rmdir(tiktok)
-            print()
-            print('Uploaded to https://archive.org/details/tiktok-' + tiktok)
-            print()
-            if file is not None:
-                file.write(str(tiktok))
-                file.write('\n')
 

@@ -10,21 +10,17 @@ from ytb_up.youtube import *
 
 # 加载.env的环境变量
 load_dotenv()
-# 配置logger
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-ch.setFormatter(formatter)
-logger = logging.getLogger('bdm-cron-upload')
-logger.setLevel(logging.INFO)
-logger.addHandler(ch)
 
 DB_PATH = os.environ['DB_PATH']
 YTB_COOKIE_PATH = os.environ['YTB_COOKIE_PATH']
 CONCURRENT_TASK_NUM = int(os.environ['CONCURRENT_TASK_NUM'])
-YTB_DEBUG = os.environ['YTB_DEBUG'] == 'True'
+YTB_LOG_LEVEL = os.environ['YTB_LOG_LEVEL']
 YTB_UN = os.environ['YTB_UN']
 YTB_PW = os.environ['YTB_PW']
+
+formatter = '%(asctime)s %(levelname)s %(message)s'
+logging.basicConfig(format=formatter, level=getattr(logging, YTB_LOG_LEVEL))
+logger = logging.getLogger(__name__)
 
 db = TinyDB(DB_PATH)
 dynamic_list = db.table('dynamic_list', cache_size=0)
@@ -39,11 +35,11 @@ uploader = YoutubeUpload(
     proxy_option=proxy_option,
     headless=True,
     # if you want to silent background running, set headless true
-    CHANNEL_COOKIES=YTB_COOKIE_PATH,
-    recordvideo=False,
-    debug=YTB_DEBUG,
+    channel_cookies=YTB_COOKIE_PATH,
+    record_video=False,
     username=YTB_UN,
     password=YTB_PW,
+    logger=logger,
     # for test purpose we need to check the video step by step ,
 )
 
@@ -75,37 +71,37 @@ async def task(item):
     video_path = MP4_FILE_PATH(title)[0]
     video_cover = ATTACHMENT_FILE_PATH(title)[0]
 
-    dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
+    # dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
 
-    try:
-        await uploader.upload(
-            videopath=video_path,
-            thumbnail=video_cover,
-            title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
-            description='',
-            # tags=tags,
-            closewhen100percentupload=True,
-            # 公开1，私有0
-            publishpolicy=1,
-        )
-    except:
-        dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
-        logger.error(f'上传失败：{title}')
-    else:
-        # 上传成功
-        dynamic_list.update({'ustatus': 200}, where('bvid') == bvid)
-        logger.info(f'上传成功：{title}')
+    # try:
+    #     await uploader.upload(
+    #         videopath=video_path,
+    #         thumbnail=video_cover,
+    #         title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
+    #         description='',
+    #         # tags=tags,
+    #         closewhen100percentupload=True,
+    #         # 公开1，私有0
+    #         publishpolicy=1,
+    #     )
+    # except:
+    #     dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
+    #     logger.error(f'上传失败：{title}')
+    # else:
+    #     # 上传成功
+    #     dynamic_list.update({'ustatus': 200}, where('bvid') == bvid)
+    #     logger.info(f'上传成功：{title}')
 
-    # await uploader.upload(
-    #     videopath=video_path,
-    #     thumbnail=video_cover,
-    #     title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
-    #     description='',
-    #     # tags=tags,
-    #     closewhen100percentupload=True,
-    #     # 公开1，私有0
-    #     publishpolicy=0,
-    # )
+    await uploader.upload(
+        videopath=video_path,
+        thumbnail=video_cover,
+        title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
+        description='',
+        # tags=tags,
+        closewhen100percentupload=True,
+        # 公开1，私有0
+        publishpolicy=0,
+    )
 
 
 async def async_task():
