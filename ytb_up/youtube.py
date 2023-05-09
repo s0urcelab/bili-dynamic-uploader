@@ -19,7 +19,7 @@ class YoutubeUpload:
         username: str = "",
         password: str = "",
         channel_cookies: str = "",
-        record_video: bool = False,
+        recording: bool = False,
         logger: logging.Logger = None,
     ) -> None:
         self.timeout = timeout
@@ -30,18 +30,30 @@ class YoutubeUpload:
         self.root_profile_directory = root_profile_directory
         self.proxy_option = proxy_option
         self.headless = headless
-        self._playwright = ''
+        self.recording = recording
+        self._playwright = None
         self.browser = None
-        self.context = ''
-        self.page = ''
-        self.record_video = record_video
-        # self.setup()
+        self.context = None
 
-    def send(self, element, text: str) -> None:
-        element.clear()
-        sleep(self.timeout)
-        element.send_keys(text)
-        sleep(self.timeout)
+    async def __aenter__(self):
+        self._playwright = await self._start_playwright()
+        browserLaunchOption = {
+            "headless": self.headless,
+            "timeout": 300000,
+        }
+        if self.proxy_option:
+            browserLaunchOption['proxy'] = {"server": self.proxy_option}
+            self.log.debug(f'Firefox with proxy: "{self.proxy_option}"')
+            
+        self.browser = await self._start_browser("firefox", **browserLaunchOption)
+        self.log.debug(f'Firefox is now running in "{"Headless" if self.headless else "Normal"}" mode.')
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        # await self.context.close()
+        await self.browser.close()
+        await self._playwright.stop()
+        self.log.debug('Firefox is now closed.')
 
     async def click_next(self, page) -> None:
         await page.locator(NEXT_BUTTON).click()
@@ -50,24 +62,6 @@ class YoutubeUpload:
     async def not_uploaded(self, page) -> bool:
         s = await page.locator(STATUS_CONTAINER).text_content()
         return s.find(UPLOADED) != -1
-    
-    async def launch(self):
-        self._playwright = await self._start_playwright()
-
-        browserLaunchOption = {
-            "headless": self.headless,
-            "timeout": 300000,
-        }
-
-        if self.proxy_option:
-            browserLaunchOption['proxy'] = {
-                "server": self.proxy_option,
-            }
-
-        self.browser = await self._start_browser("firefox", **browserLaunchOption)
-        
-        self.log.debug(
-            f'Firefox is now running in {"Headless" if self.headless else "Normal"} mode {"with proxy" if self.proxy_option else ""}')
 
     async def upload(
         self,
@@ -329,9 +323,9 @@ class YoutubeUpload:
         for _ in range(3):
             try:
                 await self.click_next(page)
-                self.log.debug('Click Next...')
+                self.log.debug('Click "Next"...')
             except:
-                pass
+                self.log.debug('Click "Next" failed.')
         if not publish_policy in [0, 1, 2]:
             publish_policy = 0
         if publish_policy == 0:
@@ -412,7 +406,6 @@ class YoutubeUpload:
         return video_id
 
     async def get_video_id(self, page) -> Optional[str]:
-        video_id = None
         try:
             video_url_container = page.locator(
                 VIDEO_URL_CONTAINER)
@@ -422,9 +415,9 @@ class YoutubeUpload:
 
             video_id = await video_url_element.get_attribute(HREF)
             video_id = video_id.split("/")[-1]
+            return video_id
         except:
-            raise Exception('Video id not found')
-        return video_id
+            raise Exception('Video id not found.')
 
     # @staticmethod
     async def _start_playwright(self):
@@ -437,7 +430,7 @@ class YoutubeUpload:
 
         if browsertype == "firefox":
             return await self._playwright.firefox.launch(**kwargs)
-            # if self.record_video:
+            # if self.recording:
             #     return await self._playwright.firefox.launch(record_video_dir=os.path.abspath('')+os.sep+"screen-recording", **kwargs)
             # else:
             #     return await self._playwright.firefox.launch( **kwargs)
@@ -448,8 +441,3 @@ class YoutubeUpload:
         raise RuntimeError(
             "You have to select either 'chromium', 'firefox', or 'webkit' as browser.")
 
-    async def close(self):
-        await self.context.close()
-        await self.browser.close()
-        await self._playwright.stop()
-        self.log.debug('Firefox is now closed.')

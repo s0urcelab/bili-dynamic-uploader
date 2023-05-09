@@ -19,27 +19,15 @@ db = TinyDB(DB_PATH)
 dynamic_list = db.table('dynamic_list', cache_size=0)
 shazam_list = db.table('shazam_list', cache_size=0)
 
-uploader = YoutubeUpload(
-    proxy_option='socks5://192.168.1.101:7891',
-    headless=True,
-    channel_cookies=YTB_COOKIE_PATH,
-    record_video=False,
-    username=YTB_UN,
-    password=YTB_PW,
-    logger=logger,
-)
-
-# # 本地测试
-# uploader = YoutubeUpload(
-#     # root_profile_directory='',
-#     proxy_option='socks5://192.168.1.101:7891',
-#     headless=False,
-#     channel_cookies=YTB_COOKIE_PATH,
-#     record_video=True,
-#     username=YTB_UN,
-#     password=YTB_PW,
-#     logger=logger,
-# )
+init_params = {
+    "proxy_option": 'socks5://192.168.1.101:7891',
+    "headless": True,
+    "channel_cookies": YTB_COOKIE_PATH,
+    "recording": False,
+    "username": YTB_UN,
+    "password": YTB_PW,
+    "logger": logger,
+}
 
 def add_shazam(item):
     q = where('id') == item['shazam_id']
@@ -51,7 +39,7 @@ def add_shazam(item):
     
 # 上传视频
 # 0正常, -1仅跳过单个视频上传, -2跳过本次所有上传任务
-async def task(item) -> int:
+async def task(upload, item) -> int:
     bvid = item['bvid']
     title = item['title']
     uname = item['uname']
@@ -78,7 +66,7 @@ async def task(item) -> int:
     logger.info(f'开始上传：{title}')
     dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
     try:
-        video_id = await uploader.upload(
+        video_id = await upload(
             video_path=video_path,
             thumbnail=video_cover,
             title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
@@ -88,29 +76,17 @@ async def task(item) -> int:
             # 公开1，私有0
             publish_policy=1,
         )
+        
+        # 上传成功
+        dynamic_list.update({'ustatus': 200, 'ytb_id': video_id}, where('bvid') == bvid)
+        logger.info(f'上传成功：{title}')
+        return 0
     except YoutubeUploadError as err:
         upload_failed(err)
         return -2
     except Exception as err:
         upload_failed(err)
         return -1
-    
-    # 上传成功
-    dynamic_list.update({'ustatus': 200, 'ytb_id': video_id}, where('bvid') == bvid)
-    logger.info(f'上传成功：{title}')
-    return 0
-
-    # # 本地测试
-    # await uploader.upload(
-    #     video_path=video_path,
-    #     thumbnail=video_cover,
-    #     title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
-    #     description='',
-    #     # 等待上传完成
-    #     wait_upload_complete=True,
-    #     # 公开1，私有0
-    #     publish_policy=0,
-    # )
 
 async def main():
     logger.info('定时任务：Youtube上传')
@@ -125,17 +101,13 @@ async def main():
     # add shazam info
     merge_list = list(map(add_shazam, [*retry_list, *wait_list][:CONCURRENT_TASK_NUM]))
     
-    # 启动浏览器
-    await uploader.launch()
-    for item in merge_list:
-        result = await task(item)
-        if result == -2:
-            break
-        if result == -1:
-            continue
-
-    # 关闭浏览器
-    await uploader.close()
+    async with YoutubeUpload(**init_params) as uploader:
+        for item in merge_list:
+            result = await task(uploader.upload, item)
+            if result == -2:
+                break
+            if result == -1:
+                continue
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
