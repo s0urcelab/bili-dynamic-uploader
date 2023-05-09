@@ -463,5 +463,5 @@ def waitfordone(page):
     uploading_progress_text=page.locator(UPLOADING_PROGRESS_SELECTOR).text_content()
     while ': ' in uploading_progress_text:
         sleep(5)
-        page.locator( UPLOADING_PROGRESS_SELECTOR).text_content()
+        page.locator(UPLOADING_PROGRESS_SELECTOR).text_content()
 

@@ -18,18 +18,26 @@ dynamic_list = db.table('dynamic_list', cache_size=0)
 shazam_list = db.table('shazam_list', cache_size=0)
 
 uploader = YoutubeUpload(
-    # use r"" for paths, this will not give formatting errors e.g. "\n"
-    # root_profile_directory='',
     proxy_option='socks5://192.168.1.101:7891',
     headless=True,
-    # if you want to silent background running, set headless true
     channel_cookies=YTB_COOKIE_PATH,
     record_video=False,
     username=YTB_UN,
     password=YTB_PW,
     logger=logger,
-    # for test purpose we need to check the video step by step ,
 )
+
+# # 本地测试
+# uploader = YoutubeUpload(
+#     # root_profile_directory='',
+#     proxy_option='socks5://192.168.1.101:7891',
+#     headless=False,
+#     channel_cookies=YTB_COOKIE_PATH,
+#     record_video=True,
+#     username=YTB_UN,
+#     password=YTB_PW,
+#     logger=logger,
+# )
 
 # 上传
 async def task(item):
@@ -48,14 +56,14 @@ async def task(item):
     video_path = get_mp4_path(title)[0]
     video_cover = resize_cover(get_cover_path(title)[0])
 
-    dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
     try:
+        logger.info(f'开始上传：{title}')
+        dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
         await uploader.upload(
             videopath=video_path,
             thumbnail=video_cover,
             title=f'【{uname}】{etitle}{" 竖屏" if is_portrait else ""}{" 8K" if is_8k else ""}',
             description='',
-            # tags=tags,
             closewhen100percentupload=True,
             # 公开1，私有0
             publishpolicy=1,
@@ -63,10 +71,12 @@ async def task(item):
         # 上传成功
         dynamic_list.update({'ustatus': 200}, where('bvid') == bvid)
         logger.info(f'上传成功：{title}')
-    except:
+    except Exception as err:
         dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
-        logger.error(f'上传失败：{title}')    
+        logger.error(err)
+        logger.error(f'上传失败：{title}')
 
+    # # 本地测试
     # await uploader.upload(
     #     videopath=video_path,
     #     thumbnail=video_cover,
@@ -79,11 +89,11 @@ async def task(item):
     # )
 
 async def main():
-    logger.info('定时任务：开始准备上传')
+    logger.info('定时任务：Youtube上传')
+    
     sort_by_date = lambda li: sorted(li, key=lambda i: i['pdate'], reverse=False)
-    # 等待上传
-    q1 = where('ustatus') == 100
-    li = sort_by_date(dynamic_list.search(q1))[:CONCURRENT_TASK_NUM]
+    q = (where('ustatus') == 100) & (where('dstatus') == 200)
+    li = sort_by_date(dynamic_list.search(q))[:CONCURRENT_TASK_NUM]
     def add_shazam(item):
         q = where('id') == item['shazam_id']
         target = shazam_list.get(q)
@@ -91,15 +101,18 @@ async def main():
             return {**item, 'etitle': target['title']}
         else:
             return item
-
     li = list(map(add_shazam, li))
-
+    
+    # 启动浏览器
+    await uploader.launch()
     for item in li:
         await task(item)
+        
+    # 关闭浏览器
+    await uploader.close()
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
     scheduler.add_job(main, 'interval', minutes=30, next_run_time=datetime.now())
     scheduler.start()
-    
     asyncio.get_event_loop().run_forever()
