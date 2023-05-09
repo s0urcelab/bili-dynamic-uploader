@@ -19,6 +19,12 @@ def get_mp4_path(name):
 def get_cover_path(name): 
     return glob.glob(os.path.join(MEDIA_ROOT, 'extra', f'{glob.escape(legal_title(name[:30]))}*'))
 
+def get_local_mp4(hash):
+    return glob.glob(os.path.join(MEDIA_ROOT, 'manual', f'*{hash}*.mp4'))
+
+def get_local_cover(hash):
+    return glob.glob(os.path.join(MEDIA_ROOT, 'manual', f'*{hash}*.png'))
+
 def resize_cover(origin_img_path):
     # Check the size of the image file
     if os.path.getsize(origin_img_path) < 1.5 * 1024 * 1024:

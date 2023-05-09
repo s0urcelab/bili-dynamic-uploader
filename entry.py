@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from tinydb import TinyDB, Query, where
 from tinydb.operations import increment
 from constant import *
-from util import get_mp4_path, get_cover_path, resize_cover
+from util import get_mp4_path, get_cover_path, resize_cover, get_local_mp4, get_local_cover
 from ytb_up.youtube import *
 from ytb_up.exceptions import *
 
@@ -52,16 +52,19 @@ async def task(upload, item) -> int:
         dynamic_list.update(increment('up_retry'), where('bvid') == bvid)
         logger.error(err)
         logger.error(f'上传失败：{title}')
-        
-    if not get_mp4_path(title):
-        logger.error(f'未找到视频文件：{title}，跳过该视频')
+    
+    find_mp4 = get_local_mp4(item['from_local']) if ('from_local' in item) else get_mp4_path(title)
+    find_cover = get_local_cover(item['from_local']) if ('from_local' in item) else get_cover_path(title)
+    
+    if not find_mp4:
+        logger.error(f'未找到mp4文件：{title}，跳过该视频')
         return -1
-    if not get_cover_path(title):
+    if not find_cover:
         logger.error(f'未找到封面文件：{title}，跳过该视频')
         return -1
 
-    video_path = get_mp4_path(title)[0]
-    video_cover = resize_cover(get_cover_path(title)[0])
+    video_path = find_mp4[0]
+    video_cover = resize_cover(find_cover[0])
 
     logger.info(f'开始上传：{title}')
     dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
@@ -92,7 +95,7 @@ async def main():
     logger.info('定时任务：Youtube上传')
     
     sort_by_date = lambda li: sorted(li, key=lambda i: i['pdate'], reverse=False)
-    q_wait = (where('ustatus') == 100) & (where('dstatus') == 200)
+    q_wait = (where('ustatus') == 100) & (where('dstatus') == 200) & (where('shazam_id') != 0)
     q_retry = (where('ustatus') < 0) & (where('up_retry') < 3)
     
     retry_list = sort_by_date(dynamic_list.search(q_retry))
