@@ -16,10 +16,6 @@ def get_path(file_path: str) -> str:
     # return file_path.replace("\u202a", "")
     return str(Path(file_path)).replace("\u202a", "")
 
-def close_browser(self):
-    self.browser.close()
-    self._playwright.stop()
-
 async def set_channel_language_english(page):
     # why does not work again
     try:
@@ -92,7 +88,7 @@ async def wait_for_processing(page, process):
         while True:
 
             x_path = "//span[@class='progress-label style-scope ytcp-video-upload-progress']"
-# TypeError: 'WebElement' object  is not subscriptable
+            # TypeError: 'WebElement' object  is not subscriptable
             upload_progress = await page.locator(
                 '[class="progress-label style-scope ytcp-video-upload-progress"]').all_text_contents()
 
@@ -223,115 +219,6 @@ def _set_basic_settings(page, title: str, description: str, thumbnail_path: str=
     if thumbnail_path:
         thumbnail_input.send_keys(thumbnail_path)
 
-def _set_advanced_settings(page, game_title: str, made_for_kids: bool):
-    # Open advanced options
-    page=page
-
-    page.wait_for_selector("#toggle-button").click()
-    if game_title:
-        game_title_input=page.wait_for_selector(
-            ".ytcp-form-gaming > "
-            "ytcp-dropdown-trigger:nth-child(1) > "
-            ":nth-child(2) > div:nth-child(3) > input:nth-child(3)"
-        )
-        game_title_input.send_keys(game_title)
-
-        # Select first item in game drop down
-        page.wait_for_selector("#text-item-2").click()
-
-    # WebDriverWait(page, 20).until(EC.element_to_be_clickable(
-        # ("VIDEO_MADE_FOR_KIDS_MFK" if made_for_kids else "VIDEO_MADE_FOR_KIDS_NOT_MFK")
-    # )).click()
-
-def _set_endcard(self):
-    page=page
-
-    # Add endscreen
-    page.wait_for_selector("#endscreens-button").click()
-    sleep(5)
-
-    for i in range(1, 11):
-        try:
-            # Select endcard type from last video or first suggestion if no prev. video
-            page.wait_for_selector(
-                "div.card:nth-child(1)").click()
-            break
-        except:
-            logging.warning(
-                f"Couldn't find endcard button. Retry in 5s! ({i}/10)")
-            sleep(5)
-
-    page.is_visible("save-button").click()
-# def close(self):
-#    page.close()
-#    page.quit()
-
-#     self.log.debug("Closed Firefox")
-
-def remove_unwatched_videos(self,page, remove_copyrighted, remove_unwatched_views):
-    try:
-        page.goto(YOUTUBE_URL)
-        sleep(USER_WAITING_TIME)
-
-        # set english as language
-        self.__set_channel_language_english()
-
-        page.get("https://studio.youtube.com/")
-        sleep(USER_WAITING_TIME)
-        page.wait_for_selector("menu-paper-icon-item-1").click()
-        sleep(USER_WAITING_TIME)
-
-        if self.__is_videos_available():
-            return True
-
-        page.wait_for_selector(
-            "#page-size .ytcp-text-dropdown-trigger").click()
-        sleep(USER_WAITING_TIME)
-        # clock 50 items per page
-        pagination_sizes=page.wait_for_selector(
-            "#select-menu-for-page-size #dialog .paper-item")
-        pagination_sizes[2].click()
-        sleep(USER_WAITING_TIME)
-
-        # filter to delete only copyrighted videos
-        if remove_copyrighted:
-            page.wait_for_selector("filter-icon").click()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "ytcp-text-menu#menu tp-yt-paper-dialog tp-yt-paper-listbox paper-item#text-item-1 ytcp-ve div").click()
-            sleep(USER_WAITING_TIME)
-
-        # filter to delete videos with views lower than 100
-        if remove_unwatched_views:
-            views_no="100000"
-            page.wait_for_selector("filter-icon").click()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "ytcp-text-menu#menu tp-yt-paper-dialog tp-yt-paper-listbox paper-item#text-item-5 ytcp-ve div").click()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "//iron-input[@id='input-2']/input").click()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "//iron-input[@id='input-2']/input").clear()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "//iron-input[@id='input-2']/input").send_keys(views_no)
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "//input[@type='text']").click()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "//tp-yt-paper-listbox[@id='operator-list']/paper-item[2]").click()
-            sleep(USER_WAITING_TIME)
-            page.wait_for_selector(
-                "//ytcp-button[@id='apply-button']/div").click()
-            sleep(USER_WAITING_TIME)
-
-        return self.__remove_unwatched_videos()
-    except Exception as e:
-        print(e)
-        return False
 
 def __is_videos_available(self,page):
     # if there are no videos to be deleted, this element should be visible
@@ -344,119 +231,8 @@ def __is_videos_available(self,page):
     except:
         return False
 
-def __write_in_field(self, field, string, select_all=False):
-    field.click()
-
-    sleep(USER_WAITING_TIME)
-    if select_all:
-        if self.is_mac:
-            field.send_keys(Keys.COMMAND + 'a')
-        else:
-            field.send_keys(Keys.CONTROL + 'a')
-        sleep(USER_WAITING_TIME)
-    field.send_keys(string)
-
-#     def __set_scheduler(self, publish_date):
-#         # Set upload time
-#         action=ActionChains(self.page)
-#         schedule_radio_button=page.wait_for_selector("schedule-radio-button")
-
-#         action.move_to_element(schedule_radio_button)
-#         action.click(schedule_radio_button).perform()
-#         self.log.debug('Set delevery to {}'.format("schedule"))
-#         sleep(.33)
-
-#         # Set close action
-#         action_close=ActionChains(self.page)
-#         action_close.send_keys(Keys.ESCAPE)
-
-#         # date picker
-#         action_datepicker=ActionChains(self.page)
-#         datepicker_trigger=page.wait_for_selector("datepicker-trigger")
-
-#         action_datepicker.move_to_element(datepicker_trigger)
-#         action_datepicker.click(datepicker_trigger).perform()
-#         sleep(.33)
-
-#         date_string=publish_date.strftime("%d.%m.%Y")
-#         date_input=page.wait_for_selector(
-#             '//ytcp-date-picker/tp-yt-paper-dialog//iron-input/input')
-#         # date_input.clear()
-#         # # Transform date into required format: Mar 19, 2021
-#         # date_input.send_keys(publish_date.strftime("%b %d, %Y"))
-#         # date_input.send_keys(Keys.RETURN)
-
-#         self.__write_in_field(date_input, date_string, True)
-#         self.log.debug('Set schedule date to {}'.format(date_string))
-
-#         action_close.perform()
-#         sleep(.33)
-
-#         # time picker
-#         action_timepicker=ActionChains(self.page)
-#         time_of_day_trigger=page.wait_for_selector("time-of-day-trigger")
-
-#         action_timepicker.move_to_element(time_of_day_trigger)
-#         action_timepicker.click(time_of_day_trigger).perform()
-#         sleep(.33)
-
-#         time_dto=(publish_date - timedelta(
-#             minutes=publish_date.minute % 15,
-#             seconds=publish_date.second,
-#             microseconds=publish_date.microsecond))
-#         time_string=time_dto.strftime("%H:%M")
-
-#         time_container=page.wait_for_selector(
-#             '//ytcp-time-of-day-picker//*[@id="dialog"]')
-#         time_item=page.wait_for_selector(
-#             '//ytcp-time-of-day-picker//tp-yt-paper-item[text() = "{}"]'.format(time_string))
-
-#         self.log.debug('Set schedule date to {}'.format(time_string))
-#        page.execute_script(
-#             "arguments[0].scrollTop = arguments[1].offsetTop; ", time_container, time_item)
-
-#         time_item.click()
-
-#         action_close.perform()
-#         sleep(.33)
-
-#     def __remove_unwatched_videos(self):
-#         DELETE_WAIT_TIME=60 * 2
-
-#         # check if videos deletion process has finished
-#         # if not visible throw error, and proceed to delete more videos
-#         try:
-#            page.wait_for_selector(
-#                 "//div[@id='header']/div/span[2]")
-#             # wait for the videos to be deleted and try delete videos after
-#             sleep(DELETE_WAIT_TIME)
-#             return self.__remove_unwatched_videos()
-#         except:
-#             pass
-
-#         if self.__is_videos_available():
-#             return True
-
-#        page.wait_for_selector("checkbox-container").click()
-#         sleep(USER_WAITING_TIME)
-#        page.wait_for_selector(".ytcp-bulk-actions .toolbar .ytcp-select .ytcp-text-dropdown-trigger .ytcp-dropdown-trigger .right-container .ytcp-dropdown-trigger").click()
-#         sleep(USER_WAITING_TIME)
-#        page.wait_for_selector(
-#             "#select-menu-for-additional-action-options #dialog #paper-list #text-item-1").click()
-#         sleep(USER_WAITING_TIME)
-#        page.wait_for_selector(
-#             "#dialog-content-confirm-checkboxes #confirm-checkbox #checkbox-container").click()
-#         sleep(USER_WAITING_TIME)
-#        page.wait_for_selector(
-#             ".ytcp-confirmation-dialog #dialog-buttons #confirm-button").click()
-#         # wait 5 minutes for the videos to be deleted
-#         sleep(DELETE_WAIT_TIME)
-
-#         return self.__remove_unwatched_videos()
-
 
 def waitfordone(page):
-
     # wait until video uploads
     # uploading progress text contains ": " - Timp ramas/Remaining time: 3 minutes.
     # we wait until ': ' is removed, so we know the text has changed and video has entered processing stage

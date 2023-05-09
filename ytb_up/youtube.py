@@ -65,6 +65,30 @@ class YoutubeUpload:
             }
 
         self.browser = await self._start_browser("firefox", **browserLaunchOption)
+        
+        self.log.debug(
+            f'Firefox is now running in {"Headless" if self.headless else "Normal"} mode {"with proxy" if self.proxy_option else ""}')
+
+    async def upload(
+        self,
+        video_path: str = "",
+        title: str = "",
+        description: str = "",
+        thumbnail: str = "",
+        publish_policy: int = 0,
+        # mode a:release_offset exist,publish_data exist will take date value as a starting date to schedule videos
+        # mode b:release_offset not exist, publishdate exist , schedule to this specific date
+        # mode c:release_offset not exist, publishdate not exist,daily count to increment schedule from tomorrow
+        # mode d: offset exist, publish date not exist, daily count to increment with specific offset schedule from tomorrow
+        release_offset: str = '0-1',
+        publish_date: datetime = datetime(
+            date.today().year,  date.today().month,  date.today().day, 10, 15),
+        tags: list = [],
+        wait_upload_complete: bool = True
+    ) -> str:
+        """Uploads a video to YouTube.
+        Returns if the video was uploaded and the video id.
+        """
         self.context = await self.browser.new_context()
         
         if self.channel_cookies:
@@ -80,58 +104,10 @@ class YoutubeUpload:
                     )
                 )
             )
-
-        self.log.debug(
-            f'Firefox is now running in {"Headless" if self.headless else "Normal"} mode {"with proxy" if self.proxy_option else ""}')
-
-    async def upload(
-        self,
-        videopath: str = "",
-        title: str = "",
-        description: str = "",
-        thumbnail: str = "",
-        publishpolicy: str = 0,
-        # mode a:release_offset exist,publish_data exist will take date value as a starting date to schedule videos
-        # mode b:release_offset not exist, publishdate exist , schedule to this specific date
-        # mode c:release_offset not exist, publishdate not exist,daily count to increment schedule from tomorrow
-        # mode d: offset exist, publish date not exist, daily count to increment with specific offset schedule from tomorrow
-        release_offset: str = '0-1',
-        publish_date: datetime = datetime(
-            date.today().year,  date.today().month,  date.today().day, 10, 15),
-        tags: list = [],
-        closewhen100percentupload: bool = True
-    ) -> Tuple[bool, Optional[str]]:
-        """Uploads a video to YouTube.
-        Returns if the video was uploaded and the video id.
-        """
-        # self._playwright = await self._start_playwright()
-        # headless = self.headless
-
-        # browserLaunchOptionDict = {
-        #     "headless": headless,
-        #     "timeout": 300000,
-        # }
-
-        # if self.proxy_option:
-        #     browserLaunchOptionDict['proxy'] = {
-        #         "server": self.proxy_option,
-        #     }
-
-        # if not self.root_profile_directory:
-
-        #     self.browser = await self._start_browser("firefox", **browserLaunchOptionDict)
-        #     if self.record_video:
-        #         self.context = await self.browser.new_context(record_video_dir=os.getcwd()+os.sep+"screen-recording")
-        #     else:
-        #         self.context = await self.browser.new_context()
-        # else:
-        #     self.context = await self._start_persistent_browser(
-        #         "firefox", user_data_dir=self.root_profile_directory, **browserLaunchOptionDict
-        #     )
         
-        if not videopath:
+        if not video_path:
             raise FileNotFoundError(
-                f'Could not find file with path: "{videopath}"')
+                f'Cannot find video in path: "{video_path}"')
             
         page = await self.context.new_page()
 
@@ -193,11 +169,11 @@ class YoutubeUpload:
         
         self.log.debug('Found Upload Modal')
 
-        self.log.debug(f'Trying to upload "{videopath}"...')
-        if os.path.exists(get_path(videopath)):
+        self.log.debug(f'Trying to upload "{video_path}"...')
+        if os.path.exists(get_path(video_path)):
             page.locator(
                 INPUT_FILE_VIDEO)
-            await page.set_input_files(INPUT_FILE_VIDEO, get_path(videopath))
+            await page.set_input_files(INPUT_FILE_VIDEO, get_path(video_path))
         
         sleep(self.timeout)
         
@@ -209,10 +185,10 @@ class YoutubeUpload:
         self.log.debug(f'Detecting verify...')
         try:
             hint = await page.locator('#dialog-title').text_content()
-            if "验证是您本人在操作" in hint:
+            if '验证是您本人在操作' in hint:
                 # fix google account verify
-                self.log.error('触发风控，停止上传')
-                self.close()
+                raise YoutubeUploadError('触发Youtube风控，终止本次任务')
+                # await page.close()
 
                 # await page.click('text=Login')
                 # time.sleep(60)
@@ -245,31 +221,19 @@ class YoutubeUpload:
                 #     await page.goto(YOUTUBE_UPLOAD_URL)
         except:
             self.log.debug(f"Detect PASS")
-        # confirm-button > div:nth-child(2)
-        # # Catch max uploads/day limit errors
-        # if page.get_attribute(NEXT_BUTTON, 'hidden') == 'true':
-        #     error_short_by_xpath=page.locator(ERROR_SHORT_XPATH)
-        #     # print(f"ERROR: {error_short_by_xpath.text} {self.cookie_working_dir}")
-        #     return False
-
-        # await page.waitForXPath('//*[contains(text(),"Daily upload limit reached")]', { timeout: 15000 }).then(() => {
-        #     console.log("Daily upload limit reached.");
-        #     browser.close();
-        # }).catch(() => {});
 
         hint = await page.locator('div.error-short.style-scope.ytcp-uploads-dialog').text_content()
-        if 'Daily upload limit reached' in hint:
+        if '已达到每日上传数上限' in hint:
             # try:
             # <div class="error-short style-scope ytcp-uploads-dialog">Daily upload limit reached</div>
 
             # daylimit=await self.page.is_visible(ERROR_SHORT_XPATH)
-            self.close()
+            # self.close()
 
-            print('Daily limit, pls try tomorrow')
+            raise YoutubeUploadError('达到每日上传数上限，终止本次任务')
             # if daylimit:
             # self.close()
-        else:
-            pass
+
 
         # get file name (default) title
         # title=title if title else page.locator(TEXTBOX).text_content()
@@ -277,7 +241,7 @@ class YoutubeUpload:
         sleep(self.timeout)
         
         if len(title) > TITLE_COUNTER:
-            print(
+            self.log.debug(
                 f"Title was not set due to exceeding the maximum allowed characters ({len(title)}/{TITLE_COUNTER})")
             title = title[:TITLE_COUNTER-1]
 
@@ -294,19 +258,19 @@ class YoutubeUpload:
 
         if description:
             if len(description) > DESCRIPTION_COUNTER:
-                print(
+                self.log.debug(
                     f"Description was not set due to exceeding the maximum allowed characters ({len(description)}/{DESCRIPTION_COUNTER})"
                 )
                 description = description[:4888]
 
             self.log.debug(f'Trying to set "{description}" as description...')
-            print('click description field to input')
+            self.log.debug('click description field to input')
             await page.locator(DESCRIPTION_CONTAINER).click()
-            print('clear existing description')
+            self.log.debug('clear existing description')
             await page.keyboard.press("Backspace")
             await page.keyboard.press("Control+KeyA")
             await page.keyboard.press("Delete")
-            print('filling new  description')
+            self.log.debug('filling new description')
 
             await page.keyboard.type(description)
 
@@ -329,42 +293,35 @@ class YoutubeUpload:
         #     print('not made for kids task done')
         # except:
         #     print('failed to set not made for kids')
-        if tags is None or tags == "" or len(tags) == 0:
-            pass
-        else:
-            print('tags you give', tags)
+        if tags and (len(tags) > 0):
+            self.log.debug('Tags:', tags)
             if type(tags) == list:
                 tags = ",".join(str(tag) for tag in tags)
                 tags = tags[:500]
             else:
                 tags = tags
-            print('overwrite prefined channel tags', tags)
+            self.log.debug('Overwrite prefined channel tags', tags)
             if len(tags) > TAGS_COUNTER:
-                print(
+                self.log.debug(
                     f"Tags were not set due to exceeding the maximum allowed characters ({len(tags)}/{TAGS_COUNTER})")
                 tags = tags[:TAGS_COUNTER]
-            print('click show more button')
+            self.log.debug('Click show more button')
             sleep(self.timeout)
             await page.locator(MORE_OPTIONS_CONTAINER).click()
 
             self.log.debug(f'Trying to set "{tags}" as tags...')
             await page.locator(TAGS_CONTAINER).locator(TEXT_INPUT).click()
-            print('clear existing tags')
+            self.log.debug('Clear existing tags')
             await page.keyboard.press("Backspace")
             await page.keyboard.press("Control+KeyA")
             await page.keyboard.press("Delete")
-            print('filling new tags')
+            self.log.debug('Filling new tags')
             await page.keyboard.type(tags)
 
-# Language and captions certification
-# Recording date and location
-# Shorts sampling
-# Category
-        if closewhen100percentupload == False:
-            pass
-        else:
+
+        if wait_upload_complete:
             await wait_for_processing(page, process=False)
-            self.log.debug('Uploading progress check task done')
+            self.log.debug('Uploading progress check...')
         # if "complete" in page.locator(".progress-label").text_content():
 
         # sometimes you have 4 tabs instead of 3
@@ -375,14 +332,14 @@ class YoutubeUpload:
                 self.log.debug('Click Next...')
             except:
                 pass
-        if not int(publishpolicy) in [0, 1, 2]:
-            publishpolicy = 0
-        if int(publishpolicy) == 0:
+        if not publish_policy in [0, 1, 2]:
+            publish_policy = 0
+        if publish_policy == 0:
             self.log.debug("Trying to set video visibility to private...")
 
             public_main_button = page.locator(PRIVATE_BUTTON)
             await page.locator(PRIVATE_RADIO_LABEL).click()
-        elif int(publishpolicy) == 1:
+        elif publish_policy == 1:
             self.log.debug("Trying to set video visibility to public...")
 
             public_main_button = page.locator(PUBLIC_BUTTON)
@@ -392,11 +349,11 @@ class YoutubeUpload:
             # mode b:release_offset not exist, publishdate exist , schedule to this specific date
             # mode c:release_offset not exist, publishdate not exist,daily count to increment schedule from tomorrow
             # mode d: offset exist, publish date not exist, daily count to increment with specific offset schedule from tomorrow
-            print('date', type(publish_date), publish_date)
+            # print('date', type(publish_date), publish_date)
             if type(publish_date) == str:
                 publish_date = datetime.fromisoformat(publish_date)
             if release_offset and not release_offset == "0-1":
-                print('mode a sta', release_offset)
+                self.log.debug('mode a sta', release_offset)
                 if not int(release_offset.split('-')[0]) == 0:
                     offset = timedelta(months=int(release_offset.split(
                         '-')[0]), days=int(release_offset.split('-')[-1]))
@@ -427,35 +384,32 @@ class YoutubeUpload:
         self.log.debug('Publish setting task done')
         video_id = await self.get_video_id(page)
         # option 1 to check final upload status
-        if closewhen100percentupload == True:
-
+        if wait_upload_complete:
             self.log.debug('Check is upload finished')
             while await self.not_uploaded(page):
                 self.log.debug('Still uploading...')
                 sleep(1)
-        try:
-            done_button = page.locator(DONE_BUTTON)
 
-            if await done_button.get_attribute("aria-disabled") == "true":
-                error_message = await page.locator(
-                    ERROR_CONTAINER).text_content()
-                return False, error_message
+        self.log.debug('Click Done button')
+        done_button = page.locator(DONE_BUTTON)
+        if await done_button.get_attribute("aria-disabled") == "true":
+            error_message = await page.locator(ERROR_CONTAINER).text_content()
+            raise Exception(error_message)
 
-            await done_button.click()
-        except:
-            self.log.debug('Done btn click failed.')
+        await done_button.click()
 
         sleep(5)
         
         # 上传完成
         self.log.debug("Upload is complete")
-        await page.close()
+        await self.context.close()
+        # await page.close()
         # await self.close()
         # page.locator("#close-icon-button > tp-yt-iron-icon:nth-child(1)").click()
         # print(page.expect_popup().locator("#html-body > ytcp-uploads-still-processing-dialog:nth-child(39)"))
         # page.wait_for_selector("ytcp-dialog.ytcp-uploads-still-processing-dialog > tp-yt-paper-dialog:nth-child(1)")
         # page.locator("ytcp-button.ytcp-uploads-still-processing-dialog > div:nth-child(2)").click()
-        return True, video_id
+        return video_id
 
     async def get_video_id(self, page) -> Optional[str]:
         video_id = None
@@ -469,8 +423,7 @@ class YoutubeUpload:
             video_id = await video_url_element.get_attribute(HREF)
             video_id = video_id.split("/")[-1]
         except:
-            raise VideoIDError("Could not get video ID")
-
+            raise Exception('Video id not found')
         return video_id
 
     # @staticmethod
@@ -495,31 +448,8 @@ class YoutubeUpload:
         raise RuntimeError(
             "You have to select either 'chromium', 'firefox', or 'webkit' as browser.")
 
-    async def _start_persistent_browser(
-        self, browser: str, user_data_dir: Optional[Union[str, Path]], **kwargs
-    ):
-        if browser == "chromium":
-
-            return await self._playwright.chromium.launch_persistent_context(
-                user_data_dir, **kwargs
-            )
-        if browser == "firefox":
-            self.browser = await self._playwright.firefox.launch(**kwargs)
-
-            if self.record_video:
-                return await self._playwright.firefox.launch_persistent_context(user_data_dir, record_video_dir=os.path.abspath('')+os.sep+"screen-recording", **kwargs)
-            else:
-                return await self._playwright.firefox.launch_persistent_context(user_data_dir, **kwargs)
-
-        if browser == "webkit":
-            return await self._playwright.webkit.launch_persistent_context(
-                user_data_dir, **kwargs
-            )
-
-        raise RuntimeError(
-            "You have to select either 'chromium', 'firefox' or 'webkit' as browser.")
-
     async def close(self):
+        await self.context.close()
         await self.browser.close()
         await self._playwright.stop()
-        self.log.debug('Firefox now closed.')
+        self.log.debug('Firefox is now closed.')
