@@ -43,9 +43,9 @@ async def task(upload, item) -> int:
     bvid = item['bvid']
     title = item['title']
     uname = item['uname']
-    is_portrait = item['is_portrait']
+    is_portrait = item['is_portrait'] if ('is_portrait' in item) else 0
     is_8k = '8K' in item['max_quality']
-    etitle = item['etitle'] or title
+    etitle = item['etitle'] if ('etitle' in item) else title
     
     def upload_failed(err):
         dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
