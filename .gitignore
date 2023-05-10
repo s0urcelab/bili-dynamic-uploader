@@ -11,4 +11,3 @@ screen-recording/*
 cookies.json
 db.json
 .env
-demo.py

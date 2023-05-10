@@ -20,8 +20,6 @@ init_params = {
     "headless": True,
     "channel_cookies": YTB_COOKIE_PATH,
     "recording": False,
-    "username": YTB_UN,
-    "password": YTB_PW,
     "logger": logger,
 }
 
