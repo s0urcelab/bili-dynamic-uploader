@@ -23,7 +23,7 @@ init_params = {
     "logger": logger,
 }
 
-async def main():
+async def main(scheduler, job_id):
     logger.info('定时任务：Youtube上传')
     
     with TinyDB(DB_PATH) as db:
@@ -97,6 +97,10 @@ async def main():
                 logger.info(f'上传成功：{title}')
                 return 0
             except YoutubeUploadError as err:
+                # 达到上传每日限制，修改下一次执行时间为12小时后
+                if err.code == 10002:
+                    job = scheduler.get_job(job_id)
+                    job.modify(next_run_time=datetime.now() + timedelta(hours=12))
                 upload_failed(err)
                 return -2
             except Exception as err:
@@ -114,6 +118,6 @@ async def main():
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
-    scheduler.add_job(main, 'interval', minutes=30, next_run_time=datetime.now())
+    job = scheduler.add_job(main, 'interval', minutes=30, next_run_time=datetime.now(), args=[scheduler, 'main'], id='main')
     scheduler.start()
     asyncio.get_event_loop().run_forever()

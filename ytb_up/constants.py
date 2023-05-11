@@ -43,3 +43,9 @@ NOT_MADE_FOR_KIDS_LABEL = ".made-for-kids-rating-container"
 ERROR_SHORT_SELECTOR = '#dialog > div > ytcp-animatable.button-area.metadata-fade-in-section.style-scope.ytcp-uploads-dialog > div > div.left-button-area.style-scope.ytcp-uploads-dialog > div > div.error-short.style-scope.ytcp-uploads-dialog'
 ERROR_SHORT_XPATH = '//*[@id="dialog"]/div/ytcp-animatable[2]/div/div[1]/div/div[1]'
 UPLOADING_PROGRESS_SELECTOR = '#dialog > div > ytcp-animatable.button-area.metadata-fade-in-section.style-scope.ytcp-uploads-dialog > div > div.left-button-area.style-scope.ytcp-uploads-dialog > ytcp-video-upload-progress > span'
+
+# ERROR CODE
+YTB_ERR_DEFAULT = 10000
+YTB_ERR_NEED_VERIFT = 10001
+YTB_ERR_DAILY_LIMIT = 10002
+

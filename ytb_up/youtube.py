@@ -177,7 +177,7 @@ class YoutubeUpload:
             hint = await page.locator('#dialog-title').text_content()
             if '验证是您本人在操作' in hint:
                 # fix google account verify
-                raise YoutubeUploadError('触发Youtube风控，终止本次任务')
+                raise YoutubeUploadError('触发Youtube风控，终止本次任务', YTB_ERR_NEED_VERIFT)
                 # await page.close()
 
                 # await page.click('text=Login')
@@ -193,8 +193,8 @@ class YoutubeUpload:
 
             # daylimit=await self.page.is_visible(ERROR_SHORT_XPATH)
             # self.close()
-
-            raise YoutubeUploadError('达到每日上传数上限，终止本次任务')
+            next_run = datetime.now() + timedelta(hours=12)
+            raise YoutubeUploadError(f'达到每日上传数上限，终止本次任务，推迟下次任务至 {next_run.strftime("%Y-%m-%d %H:%M:%S")}', YTB_ERR_DAILY_LIMIT)
             # if daylimit:
             # self.close()
 
