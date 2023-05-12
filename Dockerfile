@@ -1,7 +1,14 @@
 FROM mcr.microsoft.com/playwright/python:v1.33.0
 
-# 修改时区
-ENV TZ=Asia/Shanghai
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV DEBIAN_FRONTEND=dialog
 
 WORKDIR /app
 COPY . /app

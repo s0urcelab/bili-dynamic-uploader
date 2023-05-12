@@ -1,18 +1,18 @@
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from tinydb import TinyDB, Query, where
 from tinydb.operations import increment
 from constant import *
 from util import get_mp4_path, get_cover_path, resize_cover, get_local_mp4, get_local_cover
-from ytb_up.youtube import *
-from ytb_up.exceptions import *
+from ytb_up.youtube import YoutubeUpload
+from ytb_up.exceptions import YoutubeUploadError
 
 # 配置logger
-formatter = '%(levelname)s %(message)s'
-logging.basicConfig(format=formatter, level=getattr(logging, YTB_LOG_LEVEL))
+formatter = '%(asctime)s %(levelname)s %(message)s'
+logging.basicConfig(format=formatter, datefmt='%Y-%m-%d %H:%M:%S', level=getattr(logging, YTB_LOG_LEVEL))
 logger = logging.getLogger('bdm')
 
 init_params = {
