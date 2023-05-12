@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from tinydb import TinyDB, Query, where
 from tinydb.operations import increment
 from constant import *
-from util import get_mp4_path, get_cover_path, resize_cover, get_local_mp4, get_local_cover
+from util import get_mp4_path, get_cover_path, resize_cover
 from ytb_up.youtube import YoutubeUpload
 from ytb_up.exceptions import YoutubeUploadError
 
@@ -65,8 +65,8 @@ async def main(scheduler, job_id):
                 logger.error(err)
                 logger.error(f'上传失败：{title}')
             
-            find_mp4 = get_local_mp4(item['from_local']) if ('from_local' in item) else get_mp4_path(title)
-            find_cover = get_local_cover(item['from_local']) if ('from_local' in item) else get_cover_path(title)
+            find_mp4 = get_mp4_path(item)
+            find_cover = get_cover_path(item)
             
             if not find_mp4:
                 logger.error(f'未找到mp4文件：{title}，跳过该视频')

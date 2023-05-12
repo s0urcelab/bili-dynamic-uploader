@@ -13,17 +13,45 @@ def replace_illegal(s: str):
 def legal_title(*parts: str, join_str: str = '-'):
     return join_str.join(filter(lambda x: len(x) > 0, map(replace_illegal, parts)))
 
-def get_mp4_path(name):
-    return glob.glob(os.path.join(MEDIA_ROOT, f'{glob.escape(legal_title(name[:30]))}*.mp4'))
+"""
+from_local  => source: hash 本地手动下载，标题-bvid-hash.mp4
+from_import => source: 1 外部bvid导入，标题.mp4
+none        => source: 0 正常下载，标题.mp4
+none        => source: 2 新下载器，标题-bvid.mp4
+"""
+def get_mp4_path(item):
+    source = item['source']
+    title = glob.escape(legal_title(item['title'][:30]))
+    if source in [0, 1]:
+        return glob.glob(os.path.join(MEDIA_ROOT, f'{title}*.mp4'))
+    else:
+        key = item['bvid'] if (source == 2) else item['source']
+        return glob.glob(os.path.join(MEDIA_ROOT, f'*{key}*.mp4'))
 
-def get_cover_path(name): 
-    return glob.glob(os.path.join(MEDIA_ROOT, 'extra', f'{glob.escape(legal_title(name[:30]))}*'))
+def get_cover_path(item):
+    source = item['source']
+    title = glob.escape(legal_title(item['title'][:30]))
+    if source in [0, 1]:
+        return glob.glob(os.path.join(MEDIA_ROOT, f'{title}*.jpg'))
+    else:
+        key = item['bvid'] if (source == 2) else item['source']
+        result = []
+        for ext in ('.jpg', '.png'):
+            files = glob.glob(os.path.join(MEDIA_ROOT, f'*{key}*{ext}'))
+            result.extend(files)
+        return result
+    
+# def get_mp4_path(name):
+#     return glob.glob(os.path.join(MEDIA_ROOT, f'{glob.escape(legal_title(name[:30]))}*.mp4'))
 
-def get_local_mp4(hash):
-    return glob.glob(os.path.join(MEDIA_ROOT, 'manual', f'*{hash}*.mp4'))
+# def get_cover_path(name): 
+#     return glob.glob(os.path.join(MEDIA_ROOT, 'extra', f'{glob.escape(legal_title(name[:30]))}*'))
 
-def get_local_cover(hash):
-    return glob.glob(os.path.join(MEDIA_ROOT, 'manual', f'*{hash}*.png'))
+# def get_local_mp4(hash):
+#     return glob.glob(os.path.join(MEDIA_ROOT, 'manual', f'*{hash}*.mp4'))
+
+# def get_local_cover(hash):
+#     return glob.glob(os.path.join(MEDIA_ROOT, 'manual', f'*{hash}*.png'))
 
 def resize_cover(origin_img_path):
     # Check the size of the image file
