@@ -133,6 +133,7 @@ class YoutubeUpload:
         # await set_channel_language_english(page)
         # self.log.debug('Finish change locale to EN')
         
+        self.log.debug('PASS')
         """
         频道id存在，可能为编辑账号，需跳转频道首页上传
         """
@@ -142,6 +143,8 @@ class YoutubeUpload:
             await page.locator(UPLOAD_MENU_BTN).click()
         else:
             await page.goto(YOUTUBE_UPLOAD_URL, timeout=300000)
+        
+        sleep(self.timeout)
         
         # 上传弹窗
         has_upload_modal = await page.locator(UPLOAD_DIALOG_MODAL).count()
@@ -163,7 +166,7 @@ class YoutubeUpload:
     #   Verify it's you
     # </h1>
 
-        self.log.debug(f'Detecting verify...')
+        self.log.debug(f'Detecting Google Verify...')
         try:
             hint = await page.locator('#dialog-title').text_content()
             if '验证是您本人在操作' in hint:
@@ -175,7 +178,7 @@ class YoutubeUpload:
                 # time.sleep(60)
                 # await page.locator('#confirm-button > div:nth-child(2)').click()
         except:
-            self.log.debug(f"Detect PASS")
+            self.log.debug(f"PASS")
 
         hint = await page.locator('div.error-short.style-scope.ytcp-uploads-dialog').text_content()
         if '已达到每日上传数上限' in hint:

@@ -10,3 +10,4 @@ CONCURRENT_TASK_NUM = int(os.environ['CONCURRENT_TASK_NUM'])
 YTB_LOG_LEVEL = os.environ['YTB_LOG_LEVEL']
 YTB_HEADLESS = os.environ['YTB_HEADLESS']
 YTB_CHANNEL_ID = os.environ['YTB_CHANNEL_ID']
+UPLOAD_TASK_NUM = int(os.environ['UPLOAD_TASK_NUM'])

@@ -46,7 +46,7 @@ async def main(scheduler, job_id):
                 return {**item, 'etitle': target['title']}
             else:
                 return item
-        merge_list = list(map(add_shazam, [*retry_list, *wait_list][:CONCURRENT_TASK_NUM]))
+        merge_list = list(map(add_shazam, [*retry_list, *wait_list][:UPLOAD_TASK_NUM]))
         
         """
         上传视频
@@ -119,6 +119,6 @@ async def main(scheduler, job_id):
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
-    job = scheduler.add_job(main, 'interval', minutes=30, next_run_time=datetime.now(), args=[scheduler, 'main'], id='main')
+    job = scheduler.add_job(main, 'interval', minutes=20, next_run_time=datetime.now(), args=[scheduler, 'main'], id='main')
     scheduler.start()
     asyncio.get_event_loop().run_forever()
