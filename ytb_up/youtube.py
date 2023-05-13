@@ -33,24 +33,25 @@ class YoutubeUpload:
         self.context = None
 
     async def __aenter__(self):
-        self._playwright = await self._start_playwright()
-        browserLaunchOption = {
-            "headless": self.headless,
-            "timeout": 300000,
-        }
-        if self.proxy_option:
-            browserLaunchOption['proxy'] = {"server": self.proxy_option}
-            self.log.debug(f'Firefox with proxy: "{self.proxy_option}"')
+        # self._playwright = await self._start_playwright()
+        # browserLaunchOption = {
+        #     "headless": self.headless,
+        #     "timeout": 300000,
+        # }
+        # if self.proxy_option:
+        #     browserLaunchOption['proxy'] = {"server": self.proxy_option}
+        #     self.log.debug(f'Firefox with proxy: "{self.proxy_option}"')
             
-        self.browser = await self._start_browser("firefox", **browserLaunchOption)
-        self.log.debug(f'Firefox is now running in "{"Headless" if self.headless else "Normal"}" mode.')
+        # self.browser = await self._start_browser("firefox", **browserLaunchOption)
+        # self.log.debug(f'Firefox is now running in "{"Headless" if self.headless else "Normal"}" mode.')
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
+        pass
         # await self.context.close()
-        await self.browser.close()
-        await self._playwright.stop()
-        self.log.debug('Firefox is now closed.')
+        # await self.browser.close()
+        # await self._playwright.stop()
+        # self.log.debug('Firefox is now closed.')
 
     async def click_next(self, page) -> None:
         await page.locator(NEXT_BUTTON).click()
@@ -80,6 +81,18 @@ class YoutubeUpload:
         """Uploads a video to YouTube.
         Returns if the video was uploaded and the video id.
         """
+        self._playwright = await self._start_playwright()
+        browserLaunchOption = {
+            "headless": self.headless,
+            "timeout": 300000,
+        }
+        if self.proxy_option:
+            browserLaunchOption['proxy'] = {"server": self.proxy_option}
+            self.log.debug(f'Firefox with proxy: "{self.proxy_option}"')
+            
+        self.browser = await self._start_browser("firefox", **browserLaunchOption)
+        self.log.debug(f'Firefox is now running in "{"Headless" if self.headless else "Normal"}" mode.')
+        
         self.context = await self.browser.new_context()
         
         if self.channel_cookies:
@@ -367,6 +380,10 @@ class YoutubeUpload:
         # print(page.expect_popup().locator("#html-body > ytcp-uploads-still-processing-dialog:nth-child(39)"))
         # page.wait_for_selector("ytcp-dialog.ytcp-uploads-still-processing-dialog > tp-yt-paper-dialog:nth-child(1)")
         # page.locator("ytcp-button.ytcp-uploads-still-processing-dialog > div:nth-child(2)").click()
+        await self.browser.close()
+        await self._playwright.stop()
+        self.log.debug('Firefox is now closed.')
+        
         return video_id
 
     async def get_video_id(self, page) -> Optional[str]:
