@@ -119,27 +119,10 @@ class YoutubeUpload:
             
         await page.goto(YOUTUBE_URL, timeout=300000)
         islogin = await confirm_logged_in(page)
-        self.log.debug(
-            f'Checking login status: {"PASS" if islogin else "FAILED"}')
+        self.log.debug('Checking login status...')
 
         if not islogin:
-            self.log.debug('Try to load cookie files')
-            await self.context.clear_cookies()
-
-            await self.context.add_cookies(
-                json.load(
-                    open(
-                        self.channel_cookies,
-                        'r'
-                    )
-                )
-            )
-
-            self.log.debug('Success load cookie files')
-            await page.goto(YOUTUBE_URL, timeout=30000)
-            self.log.debug('Start to check login status')
-
-            islogin = await confirm_logged_in(page)
+            raise YoutubeUploadError('账号未登录，终止任务', YTB_LOGIN_FAILED)
 
             # https://github.com/xtekky/google-login-bypass/blob/main/login.py
 

@@ -17,7 +17,7 @@ logger = logging.getLogger('bdm')
 
 init_params = {
     "proxy_option": 'socks5://192.168.1.101:7891',
-    "headless": True,
+    "headless": YTB_LOG_LEVEL != 'DEBUG',
     "channel_cookies": YTB_COOKIE_PATH,
     "recording": False,
     "logger": logger,
@@ -62,8 +62,8 @@ async def main(scheduler, job_id):
             def upload_failed(err):
                 dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
                 dynamic_list.update(increment('up_retry'), where('bvid') == bvid)
-                logger.error(err)
                 logger.error(f'上传失败：{title}')
+                logger.error(err)
             
             find_mp4 = get_mp4_path(item)
             find_cover = get_cover_path(item)
