@@ -2,7 +2,9 @@
 YOUTUBE_URL = "https://www.youtube.com"
 YOUTUBE_STUDIO_URL = "https://studio.youtube.com"
 YOUTUBE_UPLOAD_URL = "https://www.youtube.com/upload"
-USER_WAITING_TIME = 1
+
+CREATE_MENU_BTN = '#create-icon'
+UPLOAD_MENU_BTN = 'tp-yt-paper-item[test-id="upload-beta"]'
 
 # CONTAINERS
 CONFIRM_CONTAINER='#confirmation-dialog'

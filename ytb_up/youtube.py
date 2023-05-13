@@ -16,12 +16,14 @@ class YoutubeUpload:
         timeout: int = 3,
         headless: bool = True,
         channel_cookies: str = "",
+        channel_id: str = "",
         recording: bool = False,
         logger: logging.Logger = None,
     ) -> None:
         self.timeout = timeout
         self.log = logger
         self.channel_cookies = channel_cookies
+        self.channel_id = channel_id
         self.root_profile_directory = root_profile_directory
         self.proxy_option = proxy_option
         self.headless = headless
@@ -131,10 +133,17 @@ class YoutubeUpload:
         # await set_channel_language_english(page)
         # self.log.debug('Finish change locale to EN')
         
-        # 开始上传
-        await page.goto(YOUTUBE_UPLOAD_URL, timeout=300000)
-        # sleep(self.timeout)
+        """
+        频道id存在，可能为编辑账号，需跳转频道首页上传
+        """
+        if self.channel_id:
+            await page.goto(f'{YOUTUBE_STUDIO_URL}/channel/{self.channel_id}', timeout=300000)
+            await page.locator(CREATE_MENU_BTN).click()
+            await page.locator(UPLOAD_MENU_BTN).click()
+        else:
+            await page.goto(YOUTUBE_UPLOAD_URL, timeout=300000)
         
+        # 上传弹窗
         has_upload_modal = await page.locator(UPLOAD_DIALOG_MODAL).count()
         if not has_upload_modal:
             raise RuntimeError('未识别到上传弹窗')
