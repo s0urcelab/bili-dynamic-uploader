@@ -17,7 +17,7 @@ logger = logging.getLogger('bdm')
 
 init_params = {
     "proxy_option": 'socks5://192.168.1.101:7891',
-    "headless": YTB_LOG_LEVEL != 'DEBUG',
+    "headless": YTB_HEADLESS == 'HEADLESS',
     "channel_cookies": YTB_COOKIE_PATH,
     "recording": False,
     "logger": logger,
