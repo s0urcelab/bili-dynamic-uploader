@@ -1,8 +1,10 @@
 
 import asyncio
 import logging
+import subprocess
 from datetime import datetime, date, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from tinydb import TinyDB, Query, where
 from tinydb.operations import increment
 from constant import *
@@ -119,6 +121,9 @@ async def main(scheduler, job_id):
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
-    job = scheduler.add_job(main, 'interval', minutes=20, next_run_time=datetime.now(), args=[scheduler, 'main'], id='main')
+    job = scheduler.add_job(main, 'interval', minutes=20, args=[scheduler, 'main'], id='main')
+    def self_restart(event):
+        subprocess.run(["docker", "restart", "bdm-uploader"])
+    scheduler.add_listener(self_restart, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
     scheduler.start()
     asyncio.get_event_loop().run_forever()
