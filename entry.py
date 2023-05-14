@@ -55,7 +55,7 @@ async def main(scheduler, job_id):
         0 正常, -1 仅跳过单个视频上传, -2 跳过本次所有上传任务
         """
         async def task(upload, item) -> int:
-            bvid = item['bvid']
+            vid = item['vid']
             title = item['title']
             uname = item['uname']
             is_portrait = item['is_portrait'] if ('is_portrait' in item) else 0
@@ -63,8 +63,8 @@ async def main(scheduler, job_id):
             etitle = item['etitle'] if ('etitle' in item) else title
             
             def upload_failed(err):
-                dynamic_list.update({'ustatus': -1}, where('bvid') == bvid)
-                dynamic_list.update(increment('up_retry'), where('bvid') == bvid)
+                dynamic_list.update({'ustatus': -1}, where('vid') == vid)
+                dynamic_list.update(increment('up_retry'), where('vid') == vid)
                 logger.error(f'上传失败：{title}')
                 logger.error(err)
             
@@ -82,7 +82,7 @@ async def main(scheduler, job_id):
             video_cover = resize_cover(find_cover[0])
 
             logger.info(f'开始上传：{title}')
-            dynamic_list.update({'ustatus': 150}, where('bvid') == bvid)
+            dynamic_list.update({'ustatus': 150}, where('vid') == vid)
             try:
                 video_id = await upload(
                     video_path=video_path,
@@ -96,7 +96,7 @@ async def main(scheduler, job_id):
                 )
                 
                 # 上传成功
-                dynamic_list.update({'ustatus': 200, 'ytb_id': video_id}, where('bvid') == bvid)
+                dynamic_list.update({'ustatus': 200, 'ytb_id': video_id}, where('vid') == vid)
                 logger.info(f'上传成功：{title}')
                 return 0
             except YoutubeUploadError as err:
