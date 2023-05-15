@@ -14,7 +14,7 @@ WORKDIR /app
 COPY . /app
 
 # 安装项目依赖
-RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir
+RUN pip install -r requirements.txt --no-cache-dir
 
 CMD ["python", "/app/entry.py"]
 
