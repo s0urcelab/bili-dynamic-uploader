@@ -26,7 +26,7 @@ init_params = {
     "logger": logger,
 }
 
-async def main(scheduler, job_id):
+async def main(scheduler, job_id, is_delay):
     logger.info('定时任务：Youtube上传')
     
     with TinyDB(DB_PATH) as db:
@@ -104,6 +104,7 @@ async def main(scheduler, job_id):
                 if err.code == 10002:
                     job = scheduler.get_job(job_id)
                     job.modify(next_run_time=datetime.now() + timedelta(hours=12))
+                    job.modify(args=[scheduler, 'main', 'DELAY'])
                 upload_failed(err)
                 return -2
             except Exception as err:
@@ -121,9 +122,14 @@ async def main(scheduler, job_id):
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
-    job = scheduler.add_job(main, 'interval', minutes=20, args=[scheduler, 'main'], id='main')
+    job = scheduler.add_job(main, 'interval', minutes=20, args=[scheduler, 'main', 'DEFAULT'], id='main')
     def self_restart(event):
-        subprocess.run(["docker", "restart", "bdm-uploader"])
+        job = scheduler.get_job(event.job_id)
+        # 延迟执行，不重启
+        if 'DELAY' in job.args:
+            job.modify(args=[scheduler, 'main', 'DEFAULT'])
+        else:
+            subprocess.run(["docker", "restart", "bdm-uploader"])
     scheduler.add_listener(self_restart, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
     scheduler.start()
     asyncio.get_event_loop().run_forever()
