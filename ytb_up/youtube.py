@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from random import randint
 from time import sleep
 from datetime import datetime, date, timedelta
 from .constants import *
@@ -13,7 +14,7 @@ class YoutubeUpload:
         self,
         root_profile_directory: str = "",
         proxy_option: str = "",
-        timeout: int = 3,
+        timeout: int = randint(3, 5),
         headless: bool = True,
         channel_cookies: str = "",
         channel_id: str = "",
@@ -369,7 +370,7 @@ class YoutubeUpload:
 
         await done_button.click()
 
-        sleep(5)
+        sleep(self.timeout)
         
         # 上传完成
         self.log.debug("Upload is complete")
